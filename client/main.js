@@ -1,34 +1,28 @@
-import { initLocalMode } from './mode-local.js';
-import { initOnlineMode, setConnectionLabel } from './mode-online.js';
+(function(){
+  const screenHome = document.getElementById('screen-home');
+  const screenLocal = document.getElementById('screen-local');
+  const screenOnline = document.getElementById('screen-online');
 
-const screens = {
-  home: document.getElementById('screen-home'),
-  local: document.getElementById('screen-local'),
-  online: document.getElementById('screen-online'),
-};
+  function show(screen){
+    [screenHome, screenLocal, screenOnline].forEach(el=>{
+      el.classList.remove('screen--active');
+    });
+    screen.classList.add('screen--active');
+  }
 
-function showScreen(name) {
-  Object.entries(screens).forEach(([key, el]) => {
-    el.classList.toggle('active', key === name);
+  document.getElementById('btn-home-local').addEventListener('click', ()=>{
+    show(screenLocal);
   });
-}
+  document.getElementById('btn-home-online').addEventListener('click', ()=>{
+    show(screenOnline);
+  });
+  document.getElementById('btn-back-from-local').addEventListener('click', ()=>{
+    show(screenHome);
+  });
+  document.getElementById('btn-back-from-online').addEventListener('click', ()=>{
+    show(screenHome);
+  });
 
-document.getElementById('btn-go-local').addEventListener('click', () => {
-  showScreen('local');
-});
-
-document.getElementById('btn-go-online').addEventListener('click', () => {
-  showScreen('online');
-});
-
-document.getElementById('btn-back-home-from-local').addEventListener('click', () => {
-  showScreen('home');
-});
-
-document.getElementById('btn-back-home-from-online').addEventListener('click', () => {
-  showScreen('home');
-});
-
-initLocalMode();
-initOnlineMode();
-setConnectionLabel(document.getElementById('online-connection-label'));
+  // start on home
+  show(screenHome);
+})();

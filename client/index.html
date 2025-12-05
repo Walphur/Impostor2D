@@ -2,195 +2,164 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Impostor Arcane</title>
+  <title>Impostor Arcane – Local & Online</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://unpkg.com/three@0.162.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.162.0/examples/js/controls/OrbitControls.js"></script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <div id="app-root">
-    <header class="app-header">
-      <div class="brand">
-        <span class="brand-title">IMPOSTOR ARCANE</span>
-        <span class="brand-subtitle">Party Game · Local &amp; Online</span>
+  <header class="app-header">
+    <div>
+      <div class="brand-title">IMPOSTOR ARCANE</div>
+      <div class="brand-subtitle">Party Game · Local & Online</div>
+    </div>
+    <div id="connection-indicator" class="connection connection--disconnected">
+      Servidor: desconectado
+    </div>
+  </header>
+
+  <main class="screen screen--home" id="screen-home">
+    <section class="home-left">
+      <h1>Elegí cómo jugar</h1>
+      <p>Un juego de impostores y palabras. Podés jugar todos en la misma pantalla o crear una sala online.</p>
+      <div class="home-buttons">
+        <button id="btn-home-local" class="btn btn-primary">Modo Local (2D)</button>
+        <button id="btn-home-online" class="btn btn-secondary">Modo Online</button>
       </div>
-      <div class="header-status">
-        <span id="online-connection-label">Servidor: desconectado</span>
-      </div>
-    </header>
+      <p class="tip">Tip: para el modo local, conectá la compu a la tele como si fuera una consola.</p>
+    </section>
+    <section class="home-right">
+      <ul>
+        <li>Hasta 15 jugadores</li>
+        <li>1 impostor mínimo</li>
+        <li>Ronda de palabras</li>
+        <li>Votación y expulsión</li>
+      </ul>
+    </section>
+  </main>
 
-    <main id="screen-home" class="screen active">
-      <section class="home-hero">
-        <div class="home-text">
-          <h1>¿Cómo querés jugar?</h1>
-          <p>
-            Un juego de impostores, palabras y traiciones. Jugá todos
-            alrededor de una sola pantalla en <strong>modo local</strong>
-            o conectate con amigos usando el <strong>modo online 3D con voz</strong>.
-          </p>
-          <div class="home-buttons">
-            <button id="btn-go-local" class="primary">Modo Local (2D)</button>
-            <button id="btn-go-online" class="secondary">Modo Online (3D)</button>
-          </div>
-          <p class="home-tip">
-            Tip: conectá la notebook a la tele y usá el modo local como si fuera un juego de mesa.
-          </p>
-        </div>
-        <div class="home-card">
-          <p class="home-label">Características</p>
-          <ul>
-            <li>Hasta 15 jugadores por sala</li>
-            <li>1 a 4 impostores</li>
-            <li>Ronda de palabras y votación</li>
-            <li>Vista 2D tipo mesa · vista 3D inmersiva</li>
-            <li>Chat de voz por WebRTC (modo online)</li>
-          </ul>
-        </div>
-      </section>
-    </main>
+  <main class="screen" id="screen-local">
+    <section class="top-bar">
+      <button class="btn btn-ghost" id="btn-back-from-local">← Volver</button>
+      <h2>Impostor (Local)</h2>
+    </section>
+    <section class="layout">
+      <aside class="panel">
+        <p class="phase">
+          Ronda: <span id="local-round">0</span> ·
+          Fase: <span id="local-phase">configuración</span>
+        </p>
 
-    <main id="screen-local" class="screen">
-      <div class="screen-header">
-        <button class="ghost" id="btn-back-home-from-local">← Volver</button>
-        <h2>Impostor (Local)</h2>
-        <span class="badge">Solo en esta pantalla</span>
-      </div>
-
-      <section class="local-layout">
-        <aside class="local-panel">
-          <p class="phase-label">
-            <span>Ronda: <span id="local-round">0</span></span>
-            <span>·</span>
-            <span>Fase: <span id="local-phase">configuración</span></span>
-          </p>
-
-          <div class="group">
-            <label>
-              Cantidad de jugadores (2 a 15)
-              <input type="number" id="local-player-count" min="2" max="15" value="3" />
-            </label>
-
-            <label>
-              Nombres (separados por coma)
-              <input type="text" id="local-names" placeholder="Juan, Pedro, Meli..." />
-            </label>
-
-            <label>
-              Cantidad de impostores (1 a 4)
-              <input type="number" id="local-impostor-count" min="1" max="4" value="1" />
-            </label>
-
-            <div class="button-row">
-              <button id="local-btn-load" class="primary">Cargar jugadores</button>
-              <button id="local-btn-deal" class="success" disabled>Repartir cartas</button>
-            </div>
-            <button id="local-btn-next-turn" class="disabled full" disabled>
-              Siguiente turno
-            </button>
-          </div>
-
-          <div class="group">
-            <h3>Jugadores</h3>
-            <ul id="local-player-list" class="player-list"></ul>
-          </div>
-
-          <div class="group">
-            <h3>Ver carta de:</h3>
-            <select id="local-see-card-select">
-              <option value="">-- Elegir jugador --</option>
-            </select>
-            <p class="hint">
-              Tip: que cada uno venga solo a ver su carta 😉
-            </p>
-            <div id="local-card" class="role-card hidden">
-              <span id="local-card-text"></span>
-            </div>
-          </div>
-
-          <div class="group">
-            <h3>Votación</h3>
-            <p class="hint">
-              Después de la ronda de palabras, habilitá la votación.
-            </p>
-            <button id="local-btn-go-vote" class="secondary full" disabled>Ir a votación</button>
-
-            <select id="local-vote-select" disabled>
-              <option value="">-- ¿A quién expulsan? --</option>
-            </select>
-            <button id="local-btn-kick" class="danger full" disabled>Expulsar seleccionado</button>
-
-            <p id="local-status" class="status-log"></p>
-          </div>
-        </aside>
-
-        <section class="local-canvas-wrap">
-          <canvas id="local-mesa-canvas"></canvas>
-        </section>
-      </section>
-    </main>
-
-    <main id="screen-online" class="screen">
-      <div class="screen-header">
-        <button class="ghost" id="btn-back-home-from-online">← Volver</button>
-        <h2>Impostor (Online 3D)</h2>
-        <span class="badge accent">Multijugador · voz</span>
-      </div>
-
-      <section class="online-layout">
-        <aside class="online-panel">
-          <h3>Lobby</h3>
-          <label>
-            Tu nombre
-            <input type="text" id="online-name" placeholder="Ej: Melanie" />
+        <div class="group">
+          <label>Cantidad de jugadores (2 a 15)
+            <input type="number" id="local-player-count" value="3" min="2" max="15" />
           </label>
-          <div class="button-row">
-            <button id="online-btn-create" class="primary">Crear sala</button>
-          </div>
-          <div class="button-row">
-            <input type="text" id="online-room-code" placeholder="Código sala" />
-            <button id="online-btn-join" class="secondary">Unirse</button>
-          </div>
-          <div class="button-row">
-            <button id="online-btn-start" class="success" disabled>Iniciar partida (host)</button>
-          </div>
-          <p class="hint">
-            Máx. 15 jugadores. El host inicia la partida cuando estén listos.
-          </p>
+          <label>Nombres (separados por coma)
+            <input type="text" id="local-names" placeholder="Juan, Pedro, Meli..." />
+          </label>
+          <label>Cantidad de impostores (1 a 4)
+            <input type="number" id="local-impostor-count" value="1" min="1" max="4" />
+          </label>
 
+          <div class="btn-row">
+            <button id="local-btn-load" class="btn btn-primary">Cargar jugadores</button>
+            <button id="local-btn-deal" class="btn btn-success" disabled>Repartir cartas</button>
+          </div>
+          <button id="local-btn-next" class="btn btn-secondary btn-full" disabled>Siguiente turno</button>
+        </div>
+
+        <div class="group">
+          <h3>Jugadores</h3>
+          <ul id="local-player-list" class="player-list"></ul>
+        </div>
+
+        <div class="group">
+          <h3>Ver carta de:</h3>
+          <select id="local-see-select">
+            <option value="">-- Elegir jugador --</option>
+          </select>
+          <p class="tip">Que cada uno venga solo a ver su carta 😉</p>
+          <div id="local-card" class="role-card role-card--hidden">
+            <span id="local-card-text"></span>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>Votación</h3>
+          <button id="local-btn-open-vote" class="btn btn-secondary btn-full" disabled>Ir a votación</button>
+          <select id="local-vote-select" disabled>
+            <option value="">-- ¿A quién expulsan? --</option>
+          </select>
+          <button id="local-btn-kick" class="btn btn-danger btn-full" disabled>Expulsar</button>
+          <p id="local-status" class="status-text"></p>
+        </div>
+      </aside>
+
+      <section class="canvas-wrap">
+        <canvas id="local-canvas"></canvas>
+      </section>
+    </section>
+  </main>
+
+  <main class="screen" id="screen-online">
+    <section class="top-bar">
+      <button class="btn btn-ghost" id="btn-back-from-online">← Volver</button>
+      <h2>Impostor (Online)</h2>
+    </section>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="group">
+          <h3>Lobby</h3>
+          <label>Tu nombre
+            <input type="text" id="online-name" placeholder="Ej: Meli" />
+          </label>
+          <div class="btn-row">
+            <button id="online-btn-create" class="btn btn-primary">Crear sala</button>
+          </div>
+          <div class="btn-row">
+            <input type="text" id="online-room-code" placeholder="Código sala" />
+            <button id="online-btn-join" class="btn btn-secondary">Unirse</button>
+          </div>
+          <p class="tip">El host puede iniciar la partida cuando estén todos.</p>
+        </div>
+
+        <div class="group">
           <h3>Jugadores en sala</h3>
           <ul id="online-player-list" class="player-list"></ul>
+        </div>
 
-          <h3>Fase actual</h3>
-          <p id="online-phase">Sin sala</p>
+        <div class="group">
+          <h3>Partida</h3>
+          <p>Fase: <span id="online-phase">sin sala</span></p>
           <p id="online-turn"></p>
+          <button id="online-btn-start" class="btn btn-success btn-full" disabled>Iniciar partida (host)</button>
+        </div>
 
+        <div class="group">
           <h3>Tu carta</h3>
-          <div id="online-role-card" class="role-card hidden">
-            <span id="online-role-text"></span>
+          <div id="online-card" class="role-card role-card--hidden">
+            <span id="online-card-text"></span>
           </div>
+        </div>
 
+        <div class="group">
           <h3>Votación</h3>
-          <p id="online-vote-info" class="hint">Aún no se está votando.</p>
+          <p id="online-vote-info" class="tip">Aún no se está votando.</p>
           <div id="online-vote-area"></div>
-          <button id="online-btn-callvote" class="secondary full" disabled>
-            Llamar a votación (host)
-          </button>
+          <button id="online-btn-callvote" class="btn btn-secondary btn-full" disabled>Llamar a votación (host)</button>
+        </div>
+      </aside>
 
-          <h3>Voz</h3>
-          <p id="online-voice-status" class="hint">Micrófono: no inicializado</p>
-          <button id="online-btn-voice" class="primary full">Habilitar micrófono</button>
-        </aside>
-
-        <section class="online-scene-wrap">
-          <div id="online-three-container"></div>
-          <div id="online-log" class="online-log"></div>
-        </section>
+      <section class="online-log-wrap">
+        <h3>Log</h3>
+        <div id="online-log" class="log-box"></div>
       </section>
-    </main>
-  </div>
+    </section>
+  </main>
 
-  <script type="module" src="main.js"></script>
+  <script src="game-local.js"></script>
+  <script src="game-online.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>

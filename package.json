@@ -1,5 +1,5 @@
 {
-  "name": "impostor-arcane-online",
+  "name": "impostor-arcane-multiplayer",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
