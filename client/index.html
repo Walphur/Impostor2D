@@ -2,170 +2,980 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Impostor Arcane – Local & Online</title>
+  <title>Impostor Arcane - Mesa 3D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="styles.css" />
-  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --bg: #05060a;
+      --card: #11141c;
+      --accent: #ff256b;
+      --accent-soft: rgba(255,37,107,0.16);
+      --text: #f5f5f7;
+      --muted: #9ca3af;
+      --danger: #f97373;
+      --success: #4ade80;
+      --warning: #facc15;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; }
+    body {
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+    .app {
+      width: 100%;
+      max-width: 1200px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .title span.badge {
+      font-size: .65rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--accent-soft);
+      background: rgba(15,23,42,.9);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 12px rgba(74,222,128,0.7);
+    }
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      background: rgba(15,23,42,.85);
+      border-radius: 999px;
+      padding: 4px;
+      border: 1px solid rgba(148,163,184,0.25);
+      gap: 4px;
+    }
+    .mode-pill {
+      flex: 1;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: .75rem;
+      text-align: center;
+      cursor: pointer;
+      color: var(--muted);
+      user-select: none;
+      transition: all .2s ease;
+    }
+    .mode-pill.active {
+      background: radial-gradient(circle at top, #f97316 0, #facc15 40%, #f97316 100%);
+      color: #030712;
+      font-weight: 600;
+      box-shadow: 0 0 18px rgba(250,204,21,0.6);
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(0,2.1fr) minmax(0,1.2fr);
+      gap: 16px;
+    }
+    @media (max-width: 840px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(8,13,23,0.98));
+      border-radius: 18px;
+      padding: 12px;
+      border: 1px solid rgba(148,163,184,0.2);
+      box-shadow: 0 18px 40px rgba(15,23,42,0.85);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -60%;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(244,63,94,0.12), transparent 55%),
+        radial-gradient(circle at 90% 0%, rgba(56,189,248,0.08), transparent 55%);
+      opacity: .6;
+      pointer-events: none;
+    }
+    .card-inner { position: relative; z-index: 1; }
+    .mesa-wrapper {
+      perspective: 1600px;
+      height: 360px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .mesa-3d {
+      width: 100%;
+      max-width: 520px;
+      height: 260px;
+      transform-style: preserve-3d;
+      transform: rotateX(62deg) rotateZ(-35deg) translateY(40px);
+      position: relative;
+    }
+    .mesa-top {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 0, #1f2937, #020617 75%);
+      border-radius: 26px;
+      border: 1px solid rgba(148,163,184,0.35);
+      box-shadow:
+        0 40px 100px rgba(0,0,0,0.9),
+        0 0 0 1px rgba(15,23,42,0.9) inset;
+    }
+    .mesa-glow {
+      position: absolute;
+      inset: 12%;
+      border-radius: 22px;
+      border: 1px solid rgba(248,250,252,0.08);
+      box-shadow:
+        0 0 35px rgba(59,130,246,0.6),
+        0 0 80px rgba(236,72,153,0.7);
+      opacity: .22;
+      pointer-events: none;
+    }
+    .mesa-edge {
+      position: absolute;
+      inset: 0;
+      border-radius: 26px;
+      border: 1px solid rgba(15,23,42,0.8);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.9);
+      transform: translateZ(-26px);
+      background: linear-gradient(to bottom, #020617, #000);
+    }
+    .player {
+      position: absolute;
+      width: 52px;
+      height: 72px;
+      border-radius: 18px;
+      background: radial-gradient(circle at 30% 0, #f9fafb, #111827);
+      box-shadow:
+        0 14px 30px rgba(15,23,42,0.9),
+        0 0 0 1px rgba(15,23,42,0.9);
+      transform-style: preserve-3d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .player-body {
+      width: 32px;
+      height: 54px;
+      border-radius: 16px;
+      background: radial-gradient(circle at 10% 0%, #ffffff, var(--color, #f97316));
+      box-shadow:
+        0 10px 28px rgba(15,23,42,0.85),
+        0 0 0 1px rgba(15,23,42,0.9);
+      position: relative;
+    }
+    .player-visor {
+      position: absolute;
+      top: 10px;
+      left: 4px;
+      right: 4px;
+      height: 18px;
+      border-radius: 40px;
+      background: radial-gradient(circle at 0 50%, #e0f2fe, #0f172a);
+      box-shadow:
+        0 0 0 1px rgba(15,23,42,0.9),
+        0 6px 10px rgba(15,23,42,0.9);
+    }
+    .player-mouth {
+      position: absolute;
+      bottom: 6px;
+      left: 7px;
+      right: 7px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 50% 0, #fecaca, #991b1b);
+      box-shadow:
+        0 0 12px rgba(248,113,113,0.7),
+        inset 0 0 4px rgba(15,23,42,0.7);
+      transform-origin: center;
+      transform: scaleY(0);
+      transition: transform .22s ease;
+    }
+    .player.front .player-mouth {
+      opacity: 0;
+    }
+    .player.speaking .player-mouth {
+      transform: scaleY(1);
+    }
+    .card-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 120px;
+      height: 80px;
+      transform: translate(-50%, -50%) translateZ(2px);
+      background: radial-gradient(circle at 0 0, #f97316, #9f1239);
+      border-radius: 14px;
+      box-shadow:
+        0 14px 36px rgba(15,23,42,0.95),
+        0 0 0 1px rgba(15,23,42,0.9),
+        0 0 18px rgba(248,250,252,0.4);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #0b1120;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: .63rem;
+      font-weight: 700;
+    }
+    .card-center span.word {
+      margin-top: 6px;
+      font-size: .8rem;
+      letter-spacing: .1em;
+      color: #0f172a;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(248,250,252,0.85);
+    }
+    .card-center small {
+      margin-top: 4px;
+      font-size: .6rem;
+      letter-spacing: .12em;
+      color: rgba(15,23,42,0.8);
+    }
+    .mesa-label {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(148,163,184,0.4);
+      font-size: .6rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mesa-label-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 12px rgba(248,113,113,0.9);
+    }
+    .hud {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .8rem;
+    }
+    .timer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(148,163,184,0.4);
+    }
+    .timer span.label {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
+    }
+    .timer span.value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .phase-pill {
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      border: 1px solid rgba(148,163,184,0.4);
+      background: rgba(15,23,42,0.85);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .phase-pill.vote {
+      border-color: rgba(248,113,113,0.7);
+      background: rgba(127,29,29,0.8);
+      color: #fecaca;
+    }
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: .8rem;
+      cursor: pointer;
+      background: rgba(15,23,42,0.95);
+      color: var(--text);
+      border: 1px solid rgba(148,163,184,0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .16s ease;
+    }
+    button.primary {
+      background: radial-gradient(circle at 0 0, #22c55e, #16a34a);
+      color: #022c22;
+      border-color: rgba(74,222,128,0.8);
+      box-shadow: 0 0 18px rgba(22,163,74,0.7);
+      font-weight: 600;
+    }
+    button.danger {
+      background: radial-gradient(circle at 0 0, #f97373, #b91c1c);
+      color: #fef2f2;
+      border-color: rgba(248,113,113,0.9);
+    }
+    button.skip {
+      background: rgba(15,23,42,0.95);
+      border-style: dashed;
+      opacity: .9;
+    }
+    button:disabled {
+      opacity: .4;
+      cursor: default;
+      box-shadow: none;
+    }
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15,23,42,0.9);
+    }
+    .chip {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
+    }
+    .sidebar-section {
+      margin-bottom: 14px;
+    }
+    .sidebar-section h3 {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .players-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(130px,1fr));
+      gap: 6px;
+      font-size: .8rem;
+    }
+    .player-item {
+      padding: 6px 8px;
+      border-radius: 12px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(148,163,184,0.35);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+    }
+    .player-item span.name {
+      font-weight: 500;
+    }
+    .player-item span.role {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
+    }
+    .player-item span.badge {
+      font-size: .65rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(34,197,94,0.12);
+      color: #bbf7d0;
+    }
+    .player-item span.badge.impostor {
+      background: rgba(248,113,113,0.16);
+      color: #fecaca;
+    }
+    .log {
+      max-height: 150px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .log-line {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+      display: flex;
+      gap: 6px;
+      align-items: baseline;
+    }
+    .log-line span.tag {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: rgba(148,163,184,0.9);
+    }
+    .voice-panel {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 12px;
+      background: rgba(15,23,42,0.9);
+      border: 1px dashed rgba(148,163,184,0.45);
+      font-size: .8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .voice-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .voice-status {
+      font-size: .75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .voice-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #6b7280;
+    }
+    .voice-dot.active {
+      background: #22c55e;
+      box-shadow: 0 0 10px rgba(34,197,94,0.9);
+    }
+    .voice-level {
+      height: 6px;
+      flex: 1;
+      border-radius: 999px;
+      background: rgba(31,41,55,0.9);
+      overflow: hidden;
+    }
+    .voice-level-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg,#22c55e,#facc15,#fb923c);
+      transition: width .12s linear;
+    }
+    .voice-tip {
+      font-size: .7rem;
+      color: var(--muted);
+    }
+  </style>
 </head>
 <body>
-  <header class="app-header">
-    <div>
-      <div class="brand-title">IMPOSTOR ARCANE</div>
-      <div class="brand-subtitle">Party Game · Local & Online</div>
-    </div>
-    <div id="connection-indicator" class="connection connection--disconnected">
-      Servidor: desconectado
-    </div>
-  </header>
-
-  <main class="screen screen--home screen--active" id="screen-home">
-    <section class="home-left">
-      <h1>Elegí cómo jugar</h1>
-      <p>Un juego de impostores y palabras. Podés jugar todos en la misma pantalla o crear una sala online.</p>
-      <div class="home-buttons mode-toggle">
-        <button id="btn-home-local" class="btn btn-secondary btn-mode-active">Modo Local (2D)</button>
-        <button id="btn-home-online" class="btn btn-secondary">Modo Online</button>
+  <div class="app">
+    <header>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="status-dot"></div>
+        <div>
+          <div class="title">Impostor Arcane <span class="badge">Mesa Online</span></div>
+          <div style="font-size:.78rem; color:var(--muted); margin-top:2px;">
+            Hasta 15 jugadores · 4 impostores · Ronda de palabra + votación
+          </div>
+        </div>
       </div>
-      <p class="tip">Tip: para el modo local, conectá la compu a la tele como si fuera una consola.</p>
-    </section>
-    <section class="home-right">
-      <ul>
-        <li>Hasta 15 jugadores</li>
-        <li>1 impostor mínimo</li>
-        <li>Ronda de palabras</li>
-        <li>Votación y expulsión</li>
-      </ul>
-    </section>
-  </main>
+      <div class="mode-toggle">
+        <div class="mode-pill" id="mode2d">2D</div>
+        <div class="mode-pill active" id="mode3d">3D</div>
+      </div>
+    </header>
 
-  <main class="screen" id="screen-local">
-    <section class="top-bar">
-      <button class="btn btn-ghost" id="btn-back-from-local">← Volver</button>
-      <h2>Impostor (Local)</h2>
-    </section>
-    <section class="layout">
-      <aside class="panel">
-        <p class="phase">
-          Ronda: <span id="local-round">0</span> ·
-          Fase: <span id="local-phase">configuración</span>
-        </p>
-
-        <div class="group">
-          <label>Cantidad de jugadores (2 a 15)
-            <input type="number" id="local-player-count" value="3" min="2" max="15" />
-          </label>
-          <label>Nombres (separados por coma)
-            <input type="text" id="local-names" placeholder="Juan, Pedro, Meli..." />
-          </label>
-          <label>Cantidad de impostores (1 a 4)
-            <input type="number" id="local-impostor-count" value="1" min="1" max="4" />
-          </label>
-
-          <div class="btn-row">
-            <button id="local-btn-load" class="btn btn-primary">Cargar jugadores</button>
-            <button id="local-btn-deal" class="btn btn-success" disabled>Repartir cartas</button>
+    <main>
+      <section class="card">
+        <div class="card-inner">
+          <div class="mesa-wrapper">
+            <div class="mesa-3d" id="mesa3d">
+              <div class="mesa-top"></div>
+              <div class="mesa-glow"></div>
+              <div class="mesa-edge"></div>
+              <div class="mesa-label">
+                <span class="mesa-label-dot"></span>
+                <span>Ronda en progreso</span>
+              </div>
+              <div class="card-center">
+                CARTA
+                <span class="word" id="wordDisplay">IMPOSTOR</span>
+                <small id="roleDisplay">Tu rol</small>
+              </div>
+              <!-- players will be injected by JS -->
+            </div>
           </div>
-          <button id="local-btn-next" class="btn btn-secondary btn-full" disabled>Siguiente turno</button>
-        </div>
+          <div class="hud">
+            <div class="timer">
+              <span class="label">Turno</span>
+              <span class="value" id="turnTimer">00:10</span>
+            </div>
+            <div class="timer">
+              <span class="label">Votación</span>
+              <span class="value" id="voteTimer">03:00</span>
+            </div>
+            <div class="phase-pill" id="phasePill">
+              <span>Fase: Palabra</span>
+            </div>
+            <div class="chip">
+              15 jugadores · 4 impostores · Micrófono obligatorio
+            </div>
+          </div>
+          <div class="controls">
+            <button id="btnStartRound" class="primary">▶ Iniciar ronda</button>
+            <button id="btnNextTurn">⏭ Siguiente jugador</button>
+            <button id="btnStartVoting" class="danger" disabled>🗳️ Empezar votación</button>
+            <button id="btnSkipVote" class="skip" disabled>⏭ Saltar voto / Nadie</button>
+          </div>
 
-        <div class="group">
-          <h3>Jugadores</h3>
-          <ul id="local-player-list" class="player-list"></ul>
-        </div>
-
-        <div class="group">
-          <h3>Ver carta de:</h3>
-          <select id="local-see-select">
-            <option value="">-- Elegir jugador --</option>
-          </select>
-          <p class="tip">Que cada uno venga solo a ver su carta 😉</p>
-          <div id="local-card" class="role-card role-card--hidden">
-            <span id="local-card-text"></span>
+          <div class="voice-panel">
+            <div class="voice-row">
+              <div class="voice-status">
+                <div class="voice-dot" id="voiceDot"></div>
+                <span id="voiceStatusText">Micrófono en silencio</span>
+              </div>
+              <button id="btnToggleMic">🎙️ Decir palabra</button>
+            </div>
+            <div class="voice-row" style="margin-top:4px;">
+              <div class="voice-level">
+                <div class="voice-level-inner" id="voiceLevelInner"></div>
+              </div>
+              <span style="font-size:.7rem; color:var(--muted);" id="voiceHint">Permite el micrófono para simular el chat de voz.</span>
+            </div>
+            <div class="voice-tip">
+              Cada jugador tiene 10&nbsp;s para decir <strong>una palabra</strong>. Después de que todos hablen, se abre la
+              votación durante <strong>3 minutos</strong> y se puede elegir <em>“Nadie”</em> para saltar voto (como en Among Us).
+            </div>
           </div>
         </div>
-
-        <div class="group">
-          <h3>Votación</h3>
-          <button id="local-btn-open-vote" class="btn btn-secondary btn-full" disabled>Ir a votación</button>
-          <select id="local-vote-select" disabled>
-            <option value="">-- ¿A quién expulsan? --</option>
-          </select>
-          <button id="local-btn-kick" class="btn btn-danger btn-full" disabled>Expulsar</button>
-          <p id="local-status" class="status-text"></p>
-        </div>
-      </aside>
-
-      <section class="canvas-wrap">
-        <canvas id="local-canvas"></canvas>
       </section>
-    </section>
-  </main>
 
-  <main class="screen" id="screen-online">
-    <section class="top-bar">
-      <button class="btn btn-ghost" id="btn-back-from-online">← Volver</button>
-      <h2>Impostor (Online)</h2>
-    </section>
-
-    <section class="layout layout-online">
-      <aside class="panel">
-        <div class="group">
-          <h3>Lobby</h3>
-          <label>Tu nombre
-            <input type="text" id="online-name" placeholder="Ej: Meli" />
-          </label>
-          <div class="btn-row">
-            <button id="online-btn-create" class="btn btn-primary">Crear sala</button>
+      <section class="card">
+        <div class="card-inner">
+          <div class="sidebar-section">
+            <h3>Mesa y roles</h3>
+            <div class="players-list" id="playersList"></div>
           </div>
-          <div class="btn-row">
-            <input type="text" id="online-room-code" placeholder="Código sala" />
-            <button id="online-btn-join" class="btn btn-secondary">Unirse</button>
-          </div>
-          <p class="tip">Mín. 3 jugadores. El host inicia y se juega una ronda de palabras antes de votar.</p>
-        </div>
-
-        <div class="group">
-          <h3>Jugadores en sala</h3>
-          <ul id="online-player-list" class="player-list"></ul>
-        </div>
-
-        <div class="group">
-          <h3>Partida</h3>
-          <p>Fase: <span id="online-phase">sin sala</span></p>
-          <p id="online-turn"></p>
-          <p id="online-timer" class="timer-text"></p>
-          <button id="online-btn-start" class="btn btn-success btn-full" disabled>Iniciar partida (host)</button>
-          <button id="online-btn-spoke" class="btn btn-secondary btn-full" disabled>Ya dije mi palabra</button>
-        </div>
-
-        <div class="group">
-          <h3>Tu carta</h3>
-          <div id="online-card" class="role-card role-card--hidden">
-            <span id="online-card-text"></span>
+          <div class="sidebar-section">
+            <h3>Registro de la ronda</h3>
+            <div class="log" id="log"></div>
           </div>
         </div>
-
-        <div class="group">
-          <h3>Votación</h3>
-          <p id="online-vote-info" class="tip">Aún no se está votando.</p>
-          <div id="online-vote-area"></div>
-        </div>
-      </aside>
-
-      <section class="online-main">
-        <section class="canvas-wrap canvas-wrap-online">
-          <canvas id="online-canvas"></canvas>
-        </section>
-        <section class="online-log-wrap">
-          <h3>Log</h3>
-          <div id="online-log" class="log-box"></div>
-        </section>
       </section>
-    </section>
-  </main>
+    </main>
+  </div>
 
-  <script src="game-local.js"></script>
-  <script src="game-online.js"></script>
-  <script src="main.js"></script>
+  <script>
+    const mesa3d = document.getElementById("mesa3d");
+    const playersListEl = document.getElementById("playersList");
+    const wordDisplay = document.getElementById("wordDisplay");
+    const roleDisplay = document.getElementById("roleDisplay");
+    const turnTimerEl = document.getElementById("turnTimer");
+    const voteTimerEl = document.getElementById("voteTimer");
+    const phasePill = document.getElementById("phasePill");
+    const logEl = document.getElementById("log");
+    const btnStartRound = document.getElementById("btnStartRound");
+    const btnNextTurn = document.getElementById("btnNextTurn");
+    const btnStartVoting = document.getElementById("btnStartVoting");
+    const btnSkipVote = document.getElementById("btnSkipVote");
+    const mode2d = document.getElementById("mode2d");
+    const mode3d = document.getElementById("mode3d");
+
+    let players = [];
+    const maxPlayers = 15;
+    const impostorCount = 4;
+    const colors = [
+      "#f97316","#22c55e","#3b82f6","#e11d48",
+      "#a855f7","#22d3ee","#facc15","#4ade80",
+      "#fb7185","#2dd4bf","#818cf8","#fbbf24",
+      "#f97373","#38bdf8","#a3e635"
+    ];
+
+    let currentTurn = 0;
+    let turnTime = 10;
+    let turnInterval = null;
+
+    let voting = false;
+    let voteTime = 180;
+    let voteInterval = null;
+    let votesDone = 0;
+
+    function log(tag, text) {
+      const line = document.createElement("div");
+      line.className = "log-line";
+      const tTag = document.createElement("span");
+      tTag.className = "tag";
+      tTag.textContent = tag;
+      const tText = document.createElement("span");
+      tText.textContent = text;
+      line.appendChild(tTag);
+      line.appendChild(tText);
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function createPlayers() {
+      players = [];
+      mesa3d.querySelectorAll(".player").forEach(p => p.remove());
+      playersListEl.innerHTML = "";
+      const impostors = new Set();
+      while (impostors.size < impostorCount) {
+        impostors.add(Math.floor(Math.random()*maxPlayers));
+      }
+      const radius = 120;
+      for (let i=0; i<maxPlayers; i++) {
+        const angle = (2*Math.PI * i)/maxPlayers;
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        const playerEl = document.createElement("div");
+        playerEl.className = "player";
+        const body = document.createElement("div");
+        body.className = "player-body";
+        body.style.setProperty("--color", colors[i % colors.length]);
+        const visor = document.createElement("div");
+        visor.className = "player-visor";
+        const mouth = document.createElement("div");
+        mouth.className = "player-mouth";
+        body.appendChild(visor);
+        body.appendChild(mouth);
+        playerEl.appendChild(body);
+        const deg = angle * 180/Math.PI;
+        playerEl.style.transform = `translate3d(${x}px, ${y}px, 16px) rotateZ(${deg+90}deg)`;
+        const player = {
+          id: i,
+          name: "Jugador " + (i+1),
+          impostor: impostors.has(i),
+          el: playerEl,
+          mouthEl: mouth,
+          hasSpoken: false,
+          vote: null
+        };
+        // front/back
+        if (angle > -Math.PI/2 && angle < Math.PI/2) {
+          playerEl.classList.add("front");
+        }
+        mesa3d.appendChild(playerEl);
+        players.push(player);
+
+        const row = document.createElement("div");
+        row.className = "player-item";
+        const left = document.createElement("div");
+        left.style.display = "flex";
+        left.style.flexDirection = "column";
+        left.innerHTML = `<span class="name">${player.name}</span>
+                          <span class="role">${player.impostor ? "Impostor" : "Ciudadano"}</span>`;
+        const right = document.createElement("div");
+        const badge = document.createElement("span");
+        badge.className = "badge " + (player.impostor ? "impostor" : "");
+        badge.textContent = player.impostor ? "IMPOSTOR" : "SEGURO";
+        right.appendChild(badge);
+        row.appendChild(left);
+        row.appendChild(right);
+        playersListEl.appendChild(row);
+      }
+      currentTurn = 0;
+      votesDone = 0;
+      updateCentralCard();
+      log("SISTEMA", "Mesa lista con 15 jugadores y 4 impostores.");
+    }
+
+    function updateCentralCard() {
+      const player = players[currentTurn];
+      if (!player) return;
+      if (player.impostor) {
+        wordDisplay.textContent = "IMPOSTOR";
+        roleDisplay.textContent = "Tu palabra es IMPOSIBLE de adivinar 🕵️‍♂️";
+      } else {
+        wordDisplay.textContent = "CLAVE";
+        roleDisplay.textContent = "Describe sin revelar la palabra secreta.";
+      }
+    }
+
+    function formatSeconds(sec) {
+      const m = Math.floor(sec/60);
+      const s = sec%60;
+      return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+    }
+
+    function startTurnTimer() {
+      clearInterval(turnInterval);
+      turnTime = 10;
+      turnTimerEl.textContent = formatSeconds(turnTime);
+      playSpeakingAnimation(true);
+      turnInterval = setInterval(() => {
+        turnTime--;
+        turnTimerEl.textContent = formatSeconds(turnTime);
+        if (turnTime <= 0) {
+          clearInterval(turnInterval);
+          playSpeakingAnimation(false);
+          const p = players[currentTurn];
+          if (p) {
+            p.hasSpoken = true;
+            log("RONDA", p.name + " terminó su turno de palabra.");
+          }
+          autoNextOrVoting();
+        }
+      }, 1000);
+    }
+
+    function playSpeakingAnimation(active) {
+      players.forEach((p, idx) => {
+        if (idx === currentTurn) {
+          if (active) {
+            p.el.classList.add("speaking");
+          } else {
+            p.el.classList.remove("speaking");
+          }
+        } else {
+          p.el.classList.remove("speaking");
+        }
+      });
+    }
+
+    function autoNextOrVoting() {
+      if (players.every(p => p.hasSpoken)) {
+        startVotingPhase();
+      } else {
+        nextTurn();
+      }
+    }
+
+    function nextTurn() {
+      playSpeakingAnimation(false);
+      let next = currentTurn;
+      for (let i=0; i<players.length; i++) {
+        next = (next + 1) % players.length;
+        if (!players[next].hasSpoken) {
+          currentTurn = next;
+          updateCentralCard();
+          log("RONDA", "Turno de " + players[currentTurn].name + ".");
+          startTurnTimer();
+          return;
+        }
+      }
+      startVotingPhase();
+    }
+
+    function setPhaseVoting(active) {
+      if (active) {
+        phasePill.classList.add("vote");
+        phasePill.innerHTML = "<span>Fase: Votación</span>";
+      } else {
+        phasePill.classList.remove("vote");
+        phasePill.innerHTML = "<span>Fase: Palabra</span>";
+      }
+    }
+
+    function startVotingPhase() {
+      clearInterval(turnInterval);
+      playSpeakingAnimation(false);
+      voting = true;
+      setPhaseVoting(true);
+      btnStartVoting.disabled = true;
+      btnSkipVote.disabled = false;
+      btnNextTurn.disabled = true;
+      btnStartRound.disabled = true;
+      voteTime = 180;
+      voteTimerEl.textContent = formatSeconds(voteTime);
+      log("VOTO", "Comienza la votación (3 minutos). Se corta antes si votan todos.");
+      voteInterval = setInterval(() => {
+        voteTime--;
+        voteTimerEl.textContent = formatSeconds(voteTime);
+        if (voteTime <= 0) {
+          clearInterval(voteInterval);
+          endVoting("Tiempo agotado");
+        }
+      }, 1000);
+    }
+
+    function endVoting(reason) {
+      voting = false;
+      clearInterval(voteInterval);
+      setPhaseVoting(false);
+      btnSkipVote.disabled = true;
+      btnNextTurn.disabled = false;
+      btnStartRound.disabled = false;
+      voteTimerEl.textContent = "03:00";
+      log("VOTO", "Votación finalizada (" + reason + ").");
+      players.forEach(p => p.hasSpoken = false);
+      currentTurn = 0;
+      updateCentralCard();
+      votesDone = 0;
+    }
+
+    function simulateVote(skip = false) {
+      if (!voting) return;
+      votesDone++;
+      if (skip) {
+        log("VOTO", "Un jugador eligió: Nadie (saltar voto).");
+      } else {
+        log("VOTO", "Un jugador emitió su voto.");
+      }
+      if (votesDone >= players.length) {
+        clearInterval(voteInterval);
+        endVoting("Todos votaron");
+      }
+    }
+
+    btnStartRound.addEventListener("click", () => {
+      players.forEach(p => { p.hasSpoken = false; p.vote = null; });
+      currentTurn = 0;
+      updateCentralCard();
+      setPhaseVoting(false);
+      votesDone = 0;
+      btnStartVoting.disabled = false;
+      btnNextTurn.disabled = false;
+      btnSkipVote.disabled = true;
+      log("RONDA", "Nueva ronda iniciada. Empieza " + players[currentTurn].name + ".");
+      startTurnTimer();
+    });
+
+    btnNextTurn.addEventListener("click", () => {
+      clearInterval(turnInterval);
+      playSpeakingAnimation(false);
+      const p = players[currentTurn];
+      if (p) p.hasSpoken = true;
+      autoNextOrVoting();
+    });
+
+    btnStartVoting.addEventListener("click", () => {
+      startVotingPhase();
+    });
+
+    btnSkipVote.addEventListener("click", () => {
+      simulateVote(true);
+    });
+
+    mode2d.addEventListener("click", () => {
+      mode2d.classList.add("active");
+      mode3d.classList.remove("active");
+      mesa3d.style.transform = "none";
+    });
+    mode3d.addEventListener("click", () => {
+      mode3d.classList.add("active");
+      mode2d.classList.remove("active");
+      mesa3d.style.transform = "rotateX(62deg) rotateZ(-35deg) translateY(40px)";
+    });
+
+    // VOZ (micrófono local para decir la palabra)
+    const btnToggleMic = document.getElementById("btnToggleMic");
+    const voiceDot = document.getElementById("voiceDot");
+    const voiceStatusText = document.getElementById("voiceStatusText");
+    const voiceLevelInner = document.getElementById("voiceLevelInner");
+    const voiceHint = document.getElementById("voiceHint");
+
+    let audioContext = null;
+    let analyser = null;
+    let micStream = null;
+    let voiceAnimationId = null;
+    let micOn = false;
+
+    async function enableMic() {
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(micStream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+        voiceHint.textContent = "Micrófono activo. Usa esto como chat de voz local.";
+        startVoiceLevel();
+        voiceDot.classList.add("active");
+        voiceStatusText.textContent = "Hablando… di tu palabra.";
+        micOn = true;
+        btnToggleMic.textContent = "⏹️ Cortar voz";
+        log("VOZ", "Micrófono activado para el turno actual.");
+      } catch (err) {
+        console.error(err);
+        voiceHint.textContent = "No se pudo acceder al micrófono. Revisa permisos del navegador.";
+        log("ERROR", "Permiso de micrófono denegado.");
+      }
+    }
+
+    function disableMic() {
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      if (voiceAnimationId) cancelAnimationFrame(voiceAnimationId);
+      voiceLevelInner.style.width = "0%";
+      voiceDot.classList.remove("active");
+      voiceStatusText.textContent = "Micrófono en silencio";
+      voiceHint.textContent = "Permite el micrófono para simular el chat de voz.";
+      micOn = false;
+      btnToggleMic.textContent = "🎙️ Decir palabra";
+      log("VOZ", "Micrófono desactivado.");
+    }
+
+    function startVoiceLevel() {
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        if (!analyser) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i=0; i<bufferLength; i++) sum += dataArray[i];
+        const avg = sum / bufferLength;
+        const pct = Math.min(100, (avg/255)*120);
+        voiceLevelInner.style.width = pct.toFixed(0) + "%";
+        voiceAnimationId = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    btnToggleMic.addEventListener("click", () => {
+      if (micOn) {
+        disableMic();
+      } else {
+        enableMic();
+      }
+    });
+
+    window.addEventListener("beforeunload", () => {
+      disableMic();
+    });
+
+    createPlayers();
+  </script>
 </body>
 </html>
