@@ -2,445 +2,497 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Impostor Arcane - Mesa 3D</title>
+  <title>Impostor Arcane – Mesa Online</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
-      --bg: #05060a;
-      --card: #11141c;
-      --accent: #ff256b;
-      --accent-soft: rgba(255,37,107,0.16);
-      --text: #f5f5f7;
+      --bg: #050816;
+      --card: #0b1020;
+      --card-soft: #111827;
+      --accent: #f97316;
+      --accent-strong: #fb3b78;
+      --text: #f9fafb;
       --muted: #9ca3af;
       --danger: #f97373;
-      --success: #4ade80;
-      --warning: #facc15;
+      --success: #22c55e;
     }
-    *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;}
-    body{
-      background:radial-gradient(circle at top,#111827 0,#020617 55%,#000 100%);
-      color:var(--text);
-      min-height:100vh;
-      display:flex;
-      justify-content:center;
-      align-items:stretch;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     }
-    .app{
-      width:100%;
-      max-width:1200px;
-      padding:16px;
-      display:flex;
-      flex-direction:column;
-      gap:16px;
-      position:relative;
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
     }
-    header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
+    .app {
+      width: 100%;
+      max-width: 1200px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
     }
-    .title{
-      font-size:1.4rem;
-      font-weight:700;
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      display:flex;
-      align-items:center;
-      gap:8px;
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
-    .title span.badge{
-      font-size:.65rem;
-      padding:3px 8px;
-      border-radius:999px;
-      border:1px solid var(--accent-soft);
-      background:rgba(15,23,42,.9);
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      color:var(--muted);
+    .title-block {
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
-    .status-dot{
-      width:10px;height:10px;border-radius:50%;background:var(--success);
-      box-shadow:0 0 12px rgba(74,222,128,.7);
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 10px rgba(34,197,94,0.9);
     }
-    .subtitle{
-      font-size:.8rem;
-      color:var(--muted);
-      margin-top:2px;
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
     }
-    .mode-toggle{
-      display:flex;align-items:center;background:rgba(15,23,42,.85);
-      border-radius:999px;padding:4px;border:1px solid rgba(148,163,184,.25);gap:4px;
+    .subtitle {
+      font-size: .8rem;
+      color: var(--muted);
     }
-    .mode-pill{
-      flex:1;padding:6px 10px;border-radius:999px;font-size:.75rem;
-      text-align:center;cursor:pointer;color:var(--muted);user-select:none;
-      transition:all .2s ease;
+    main {
+      display: grid;
+      grid-template-columns: minmax(0,2.1fr) minmax(0,1.2fr);
+      gap: 16px;
     }
-    .mode-pill.active{
-      background:radial-gradient(circle at top,#f97316 0,#facc15 40%,#f97316 100%);
-      color:#030712;font-weight:600;box-shadow:0 0 18px rgba(250,204,21,.6);
+    @media (max-width: 880px) {
+      main { grid-template-columns: 1fr; }
     }
-    main{
-      display:grid;
-      grid-template-columns:minmax(0,2.1fr) minmax(0,1.2fr);
-      gap:16px;
-      transition:filter .25s ease,opacity .25s ease;
+    .card {
+      background: radial-gradient(circle at top, #0b1120, #020617);
+      border-radius: 20px;
+      padding: 14px;
+      border: 1px solid rgba(148,163,184,0.25);
+      box-shadow: 0 22px 60px rgba(15,23,42,0.9);
+      position: relative;
+      overflow: hidden;
     }
-    main.blurred{filter:blur(3px);opacity:.6;pointer-events:none;}
-    @media(max-width:840px){main{grid-template-columns:1fr;}}
-    .card{
-      background:linear-gradient(135deg,rgba(15,23,42,.98),rgba(8,13,23,.98));
-      border-radius:18px;padding:12px;border:1px solid rgba(148,163,184,.2);
-      box-shadow:0 18px 40px rgba(15,23,42,.85);position:relative;overflow:hidden;
-    }
-    .card::before{
-      content:"";position:absolute;inset:-60%;
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
       background:
-        radial-gradient(circle at 10% 0,rgba(244,63,94,.12),transparent 55%),
-        radial-gradient(circle at 90% 0,rgba(56,189,248,.08),transparent 55%);
-      opacity:.6;pointer-events:none;
+        radial-gradient(circle at 0 0, rgba(249,115,22,0.16), transparent 55%),
+        radial-gradient(circle at 100% 0, rgba(59,130,246,0.18), transparent 55%);
+      opacity: .6;
+      pointer-events: none;
     }
-    .card-inner{position:relative;z-index:1;}
-
-    .mesa-wrapper{
-      perspective:1600px;
-      height:360px;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-    }
-    .mesa-3d{
-      width:100%;max-width:520px;height:260px;
-      transform-style:preserve-3d;
-      transform:rotateX(62deg) rotateZ(-35deg) translateY(40px);
-      position:relative;
-      transition:transform .25s ease;
-    }
-    .mesa-top{
-      position:absolute;inset:0;
-      background:radial-gradient(circle at 20% 0,#1f2937,#020617 75%);
-      border-radius:26px;
-      border:1px solid rgba(148,163,184,.35);
-      box-shadow:0 40px 100px rgba(0,0,0,.9),0 0 0 1px rgba(15,23,42,.9) inset;
-    }
-    .mesa-glow{
-      position:absolute;inset:12%;border-radius:22px;
-      border:1px solid rgba(248,250,252,.08);
-      box-shadow:0 0 35px rgba(59,130,246,.6),0 0 80px rgba(236,72,153,.7);
-      opacity:.22;pointer-events:none;
-    }
-    .mesa-edge{
-      position:absolute;inset:0;border-radius:26px;
-      border:1px solid rgba(15,23,42,.8);
-      box-shadow:0 20px 40px rgba(0,0,0,.9);
-      transform:translateZ(-26px);
-      background:linear-gradient(to bottom,#020617,#000);
-    }
-    .mesa-label{
-      position:absolute;top:10px;left:12px;
-      padding:4px 10px;border-radius:999px;
-      background:rgba(15,23,42,.85);
-      border:1px solid rgba(148,163,184,.4);
-      font-size:.6rem;text-transform:uppercase;
-      letter-spacing:.16em;color:var(--muted);
-      display:flex;align-items:center;gap:6px;
-    }
-    .mesa-label-dot{
-      width:6px;height:6px;border-radius:999px;
-      background:var(--accent);
-      box-shadow:0 0 12px rgba(248,113,113,.9);
-    }
-    .card-center{
-      position:absolute;top:50%;left:50%;
-      width:120px;height:80px;
-      transform:translate(-50%,-50%) translateZ(2px);
-      background:radial-gradient(circle at 0 0,#f97316,#9f1239);
-      border-radius:14px;
-      box-shadow:0 14px 36px rgba(15,23,42,.95),
-                 0 0 0 1px rgba(15,23,42,.9),
-                 0 0 18px rgba(248,250,252,.4);
-      display:flex;flex-direction:column;
-      justify-content:center;align-items:center;
-      color:#0b1120;text-transform:uppercase;
-      letter-spacing:.16em;font-size:.63rem;font-weight:700;
-    }
-    .card-center span.word{
-      margin-top:6px;font-size:.8rem;letter-spacing:.1em;
-      color:#0f172a;padding:3px 10px;border-radius:999px;
-      background:rgba(248,250,252,.85);
-    }
-    .card-center small{
-      margin-top:4px;font-size:.6rem;letter-spacing:.12em;
-      color:rgba(15,23,42,.8);text-align:center;
+    .card-inner {
+      position: relative;
+      z-index: 1;
     }
 
-    .player{
-      position:absolute;width:52px;height:72px;
-      border-radius:18px;
-      background:radial-gradient(circle at 30% 0,#f9fafb,#111827);
-      box-shadow:0 14px 30px rgba(15,23,42,.9),0 0 0 1px rgba(15,23,42,.9);
-      transform-style:preserve-3d;
-      display:flex;align-items:center;justify-content:center;
-      transition:transform .35s ease,opacity .4s ease;
+    /* Mesa con imagen */
+    .mesa-wrapper {
+      border-radius: 20px;
+      overflow: hidden;
+      background: #020617;
+      border: 1px solid rgba(148,163,184,0.35);
+      position: relative;
+      min-height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .player-body{
-      width:32px;height:54px;border-radius:16px;
-      background:radial-gradient(circle at 10% 0,#ffffff,var(--color,#f97316));
-      box-shadow:0 10px 28px rgba(15,23,42,.85),0 0 0 1px rgba(15,23,42,.9);
-      position:relative;
+    .mesa-img {
+      width: 100%;
+      max-width: 720px;
+      display: block;
     }
-    .player-visor{
-      position:absolute;top:10px;left:4px;right:4px;
-      height:18px;border-radius:40px;
-      background:radial-gradient(circle at 0 50%,#e0f2fe,#0f172a);
-      box-shadow:0 0 0 1px rgba(15,23,42,.9),0 6px 10px rgba(15,23,42,.9);
+    .mesa-overlay-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-40%);
+      background: radial-gradient(circle at 0 0, #f97316, #9f1239);
+      padding: 10px 16px;
+      border-radius: 16px;
+      box-shadow:
+        0 14px 36px rgba(15,23,42,0.95),
+        0 0 0 1px rgba(15,23,42,0.9),
+        0 0 18px rgba(248,250,252,0.45);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      font-size: .65rem;
+      color: #0f172a;
     }
-    .player-mouth{
-      position:absolute;bottom:6px;left:7px;right:7px;
-      height:10px;border-radius:999px;
-      background:radial-gradient(circle at 50% 0,#fecaca,#991b1b);
-      box-shadow:0 0 12px rgba(248,113,113,.7),inset 0 0 4px rgba(15,23,42,.7);
-      transform-origin:center;
-      transform:scaleY(0);
-      transition:transform .22s ease;
+    .mesa-word {
+      margin-top: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(248,250,252,0.9);
+      color: #0f172a;
+      font-size: .85rem;
+      letter-spacing: .12em;
     }
-    .player.front .player-mouth{opacity:0;}
-    .player.speaking .player-mouth{transform:scaleY(1);}
-    .player.kicked{
-      opacity:0;
-      transform:translate3d(0,-260px,180px) scale(.3) rotateZ(-20deg);
-    }
-
-    .hud{
-      margin-top:6px;
-      display:flex;flex-wrap:wrap;gap:8px;
-      align-items:center;justify-content:space-between;
-      font-size:.8rem;
-    }
-    .timer{
-      display:flex;align-items:center;gap:6px;
-      padding:4px 10px;border-radius:999px;
-      background:rgba(15,23,42,.85);
-      border:1px solid rgba(148,163,184,.4);
-    }
-    .timer span.label{
-      font-size:.68rem;text-transform:uppercase;
-      letter-spacing:.14em;color:var(--muted);
-    }
-    .timer span.value{
-      font-variant-numeric:tabular-nums;font-weight:600;
-    }
-    .phase-pill{
-      padding:3px 10px;border-radius:999px;
-      font-size:.7rem;text-transform:uppercase;
-      letter-spacing:.16em;
-      border:1px solid rgba(148,163,184,.4);
-      background:rgba(15,23,42,.85);
-      color:var(--muted);
-      display:flex;align-items:center;gap:6px;
-    }
-    .phase-pill.vote{
-      border-color:rgba(248,113,113,.7);
-      background:rgba(127,29,29,.8);
-      color:#fecaca;
-    }
-    .chip{
-      padding:2px 8px;border-radius:999px;
-      border:1px solid rgba(148,163,184,.5);
-      font-size:.65rem;text-transform:uppercase;
-      letter-spacing:.16em;color:var(--muted);
+    .mesa-role {
+      margin-top: 4px;
+      font-size: .65rem;
+      letter-spacing: .12em;
+      color: rgba(15,23,42,0.8);
     }
 
-    .controls{
-      margin-top:10px;
-      display:flex;flex-wrap:wrap;gap:8px;
+    .hud {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .8rem;
     }
-    button{
-      border:none;border-radius:999px;
-      padding:7px 14px;font-size:.8rem;cursor:pointer;
-      background:rgba(15,23,42,.95);color:var(--text);
-      border:1px solid rgba(148,163,184,.4);
-      display:inline-flex;align-items:center;gap:6px;
-      transition:all .16s ease;
+    .chip {
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
     }
-    button.primary{
-      background:radial-gradient(circle at 0 0,#22c55e,#16a34a);
-      color:#022c22;border-color:rgba(74,222,128,.8);
-      box-shadow:0 0 18px rgba(22,163,74,.7);
-      font-weight:600;
+    .timer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(148,163,184,0.35);
     }
-    button.skip{
-      background:rgba(15,23,42,.95);
-      border-style:dashed;opacity:.9;
+    .timer-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
     }
-    button:disabled{
-      opacity:.35;cursor:default;box-shadow:none;
+    .timer-value {
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
     }
-    button:not(:disabled):hover{
-      transform:translateY(-1px);
-      box-shadow:0 8px 18px rgba(15,23,42,.9);
+    .phase-pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(15,23,42,0.9);
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: var(--muted);
     }
-
-    .sidebar-section{margin-bottom:14px;}
-    .sidebar-section h3{
-      font-size:.75rem;text-transform:uppercase;
-      letter-spacing:.2em;color:var(--muted);margin-bottom:8px;
-    }
-    .players-list{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
-      gap:6px;font-size:.8rem;
-    }
-    .player-item{
-      padding:6px 8px;border-radius:12px;
-      background:rgba(15,23,42,.85);
-      border:1px solid rgba(148,163,184,.35);
-      display:flex;justify-content:space-between;
-      align-items:center;gap:4px;
-    }
-    .player-item span.name{font-weight:500;}
-    .player-item span.sub{
-      font-size:.65rem;text-transform:uppercase;
-      letter-spacing:.14em;color:var(--muted);
-    }
-    .player-item button.vote-btn{
-      margin-left:6px;padding:3px 8px;font-size:.7rem;
+    .phase-pill.vote {
+      border-color: rgba(248,113,113,0.8);
+      background: rgba(127,29,29,0.9);
+      color: #fecaca;
     }
 
-    .log{max-height:150px;overflow-y:auto;padding-right:4px;}
-    .log-line{
-      font-size:.78rem;color:var(--muted);
-      margin-bottom:3px;display:flex;gap:6px;align-items:baseline;
+    .controls {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
-    .log-line span.tag{
-      font-size:.65rem;text-transform:uppercase;
-      letter-spacing:.16em;color:rgba(148,163,184,.9);
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: .8rem;
+      cursor: pointer;
+      background: rgba(15,23,42,0.98);
+      color: var(--text);
+      border: 1px solid rgba(148,163,184,0.45);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .16s ease;
+    }
+    button.primary {
+      background: radial-gradient(circle at 0 0, #22c55e, #16a34a);
+      color: #022c22;
+      border-color: rgba(74,222,128,0.9);
+      box-shadow: 0 0 18px rgba(22,163,74,0.75);
+      font-weight: 600;
+    }
+    button.danger {
+      background: radial-gradient(circle at 0 0, #fb7185, #b91c1c);
+      border-color: rgba(248,113,113,0.9);
+    }
+    button:disabled {
+      opacity: .35;
+      cursor: default;
+      box-shadow: none;
+    }
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(15,23,42,0.9);
     }
 
-    .voice-panel{
-      margin-top:8px;padding:8px;border-radius:12px;
-      background:rgba(15,23,42,.9);
-      border:1px dashed rgba(148,163,184,.45);
-      font-size:.8rem;display:flex;flex-direction:column;gap:4px;
+    .voice-panel {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 14px;
+      background: rgba(15,23,42,0.95);
+      border: 1px dashed rgba(148,163,184,0.45);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: .8rem;
     }
-    .voice-row{
-      display:flex;flex-wrap:wrap;gap:8px;
-      align-items:center;justify-content:space-between;
+    .voice-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
     }
-    .voice-status{
-      font-size:.75rem;color:var(--muted);
-      display:flex;align-items:center;gap:6px;
+    .voice-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .78rem;
+      color: var(--muted);
     }
-    .voice-dot{
-      width:8px;height:8px;border-radius:999px;
-      background:#6b7280;
+    .voice-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #6b7280;
     }
-    .voice-dot.active{
-      background:#22c55e;
-      box-shadow:0 0 10px rgba(34,197,94,.9);
+    .voice-dot.active {
+      background: var(--success);
+      box-shadow: 0 0 10px rgba(34,197,94,0.9);
     }
-    .voice-level{
-      height:6px;flex:1;border-radius:999px;
-      background:rgba(31,41,55,.9);overflow:hidden;
+    .voice-level {
+      flex: 1;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(30,41,59,0.9);
+      overflow: hidden;
     }
-    .voice-level-inner{
-      height:100%;width:0%;
-      background:linear-gradient(90deg,#22c55e,#facc15,#fb923c);
-      transition:width .12s linear;
+    .voice-level-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg,#22c55e,#facc15,#fb923c);
+      transition: width .12s linear;
     }
-    .voice-tip{font-size:.7rem;color:var(--muted);}
+    .voice-tip {
+      font-size: .72rem;
+      color: var(--muted);
+    }
+
+    /* Sidebar */
+    .sidebar-section {
+      margin-bottom: 14px;
+    }
+    .sidebar-section h3 {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .players-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+      gap: 6px;
+      font-size: .8rem;
+    }
+    .player-item {
+      padding: 6px 8px;
+      border-radius: 12px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.4);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .player-item-main {
+      display: flex;
+      flex-direction: column;
+    }
+    .player-name {
+      font-weight: 500;
+    }
+    .player-sub {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
+    }
+    .log {
+      max-height: 170px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .log-line {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+      display: flex;
+      gap: 6px;
+      align-items: baseline;
+    }
+    .log-tag {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: rgba(148,163,184,0.9);
+    }
 
     /* Lobby */
-    .lobby-overlay{
-      position:absolute;inset:0;
-      display:flex;align-items:center;justify-content:center;
-      z-index:10;
+    .lobby-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      backdrop-filter: blur(4px);
     }
-    .lobby-panel{
-      width:100%;max-width:540px;
-      background:radial-gradient(circle at top,#111827,#020617);
-      border-radius:22px;padding:18px;
-      border:1px solid rgba(148,163,184,.4);
-      box-shadow:0 24px 80px rgba(15,23,42,.9);
+    .lobby-panel {
+      width: 100%;
+      max-width: 540px;
+      border-radius: 22px;
+      padding: 18px;
+      background: radial-gradient(circle at top, #020617, #020617 45%, #000 100%);
+      border: 1px solid rgba(148,163,184,0.45);
+      box-shadow: 0 24px 80px rgba(15,23,42,0.95);
     }
-    .lobby-header{
-      display:flex;justify-content:space-between;
-      align-items:center;margin-bottom:12px;
+    .lobby-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
     }
-    .lobby-header h2{
-      font-size:1rem;letter-spacing:.18em;
-      text-transform:uppercase;
+    .lobby-title {
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: .18em;
     }
-    .lobby-tabs{
-      display:inline-flex;border-radius:999px;
-      border:1px solid rgba(148,163,184,.4);overflow:hidden;
-      font-size:.75rem;
+    .lobby-tabs {
+      display: inline-flex;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      overflow: hidden;
     }
-    .lobby-tab{
-      padding:5px 10px;cursor:pointer;
-      text-transform:uppercase;letter-spacing:.14em;
-      background:transparent;color:var(--muted);
-      border-right:1px solid rgba(148,163,184,.3);
+    .lobby-tab {
+      padding: 5px 10px;
+      font-size: .75rem;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      border-right: 1px solid rgba(148,163,184,0.35);
     }
-    .lobby-tab:last-child{border-right:none;}
-    .lobby-tab.active{
-      background:rgba(34,197,94,.12);color:#bbf7d0;
+    .lobby-tab:last-child {
+      border-right: none;
     }
-    .lobby-grid{
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:8px;margin-bottom:10px;font-size:.8rem;
+    .lobby-tab.active {
+      background: rgba(34,197,94,0.16);
+      color: #bbf7d0;
     }
-    .field{display:flex;flex-direction:column;gap:3px;}
-    .field label{
-      font-size:.72rem;color:var(--muted);
-      text-transform:uppercase;letter-spacing:.14em;
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin-bottom: 8px;
+      font-size: .8rem;
     }
-    .field input[type="number"],
-    .field input[type="text"]{
-      padding:6px 8px;border-radius:10px;
-      border:1px solid rgba(148,163,184,.6);
-      background:rgba(15,23,42,.9);
-      color:var(--text);font-size:.8rem;
+    .field label {
+      font-size: .72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .14em;
     }
-    .lobby-footer{
-      display:flex;justify-content:space-between;
-      align-items:center;gap:8px;font-size:.75rem;
-      color:var(--muted);margin-top:8px;
+    .field input,
+    .field select {
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.95);
+      color: var(--text);
+      font-size: .8rem;
     }
-    .lobby-footer .code{
-      font-variant-numeric:tabular-nums;
-      letter-spacing:.18em;
+    .lobby-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .lobby-footer {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: .75rem;
+      color: var(--muted);
+    }
+    .room-code {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .16em;
+    }
+    .my-player {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .my-player select {
+      margin-left: 6px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.95);
+      color: var(--text);
+      font-size: .75rem;
     }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="status-dot"></div>
-        <div>
-          <div class="title">
-            Impostor Arcane
-            <span class="badge">Mesa online</span>
-          </div>
-          <div class="subtitle" id="headerSubtitle">
-            Configurá jugadores, creá la sala y arrancá la ronda de palabras.
+      <div>
+        <div class="title-block">
+          <div class="status-dot"></div>
+          <div>
+            <div class="title">IMPOSTOR ARCANE</div>
+            <div class="subtitle" id="subtitle">
+              Configurá jugadores y creá la sala para empezar la partida.
+            </div>
           </div>
         </div>
       </div>
-      <div class="mode-toggle">
-        <div class="mode-pill" id="mode2d">2D</div>
-        <div class="mode-pill active" id="mode3d">3D</div>
+      <div class="my-player" id="myPlayerBox">
+        Este dispositivo juega como:
+        <span id="myPlayerName">sin asignar</span>
       </div>
     </header>
 
     <!-- Lobby -->
-    <div class="lobby-overlay" id="lobbyOverlay">
+    <div class="lobby-overlay" id="lobby">
       <div class="lobby-panel">
         <div class="lobby-header">
-          <h2>Configurar partida</h2>
+          <div class="lobby-title">Configurar partida</div>
           <div class="lobby-tabs">
             <button class="lobby-tab active" id="tabCreate">Crear sala</button>
             <button class="lobby-tab" id="tabJoin">Unirse</button>
@@ -454,22 +506,23 @@
               <input id="hostName" type="text" placeholder="Meli" />
             </div>
             <div class="field">
-              <label for="numPlayers">Jugadores máx.</label>
-              <input id="numPlayers" type="number" min="3" max="15" value="10" />
-            </div>
-            <div class="field">
-              <label for="numImpostors">Impostores</label>
-              <input id="numImpostors" type="number" min="1" max="4" value="3" />
+              <label for="maxPlayers">Jugadores</label>
+              <input id="maxPlayers" type="number" min="3" max="15" value="10" />
             </div>
           </div>
-          <div class="controls" style="justify-content:flex-end;margin-top:4px;">
-            <button id="btnCreateGame" class="primary">Crear sala</button>
+          <div class="field">
+            <label for="impostors">Impostores</label>
+            <input id="impostors" type="number" min="1" max="4" value="3" />
+          </div>
+          <div class="controls" style="justify-content:flex-end; margin-top:4px;">
+            <button id="btnCreate" class="primary">Crear sala</button>
           </div>
           <div class="lobby-footer">
             <div>
-              Sos el host. Después de crear, solo vos podés iniciar la partida.
+              Esta versión funciona como demo en <strong>un solo dispositivo</strong>.
+              Más adelante se conecta online para que cada uno entre desde su celu.
             </div>
-            <div class="code" id="roomCode">ARC-01</div>
+            <div class="room-code" id="roomCode">ARC-000</div>
           </div>
         </div>
 
@@ -477,95 +530,77 @@
           <div class="lobby-grid">
             <div class="field">
               <label for="joinName">Tu nombre</label>
-              <input id="joinName" type="text" placeholder="Juani" />
+              <input id="joinName" type="text" placeholder="Invitado" />
             </div>
             <div class="field">
               <label for="joinCode">Código de sala</label>
-              <input id="joinCode" type="text" placeholder="ARC-XXX" />
+              <input id="joinCode" type="text" placeholder="ARC-123" />
             </div>
           </div>
-          <div class="controls" style="justify-content:flex-end;margin-top:4px;">
-            <button id="btnJoinGame" class="primary">Unirse</button>
+          <div class="controls" style="justify-content:flex-end;">
+            <button id="btnJoin" class="primary">Unirse</button>
           </div>
           <div class="lobby-footer">
             <div>
-              En la versión online real, cada jugador entra desde su celu con este
-              formulario. Esta demo lo simula todo en esta misma pantalla.
+              En la versión online real, cada jugador entraría con su código.
+              Por ahora, todo se simula en esta misma pantalla.
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <main id="mainContent" class="blurred">
+    <main>
       <section class="card">
         <div class="card-inner">
           <div class="mesa-wrapper">
-            <div class="mesa-3d" id="mesa3d">
-              <div class="mesa-top"></div>
-              <div class="mesa-glow"></div>
-              <div class="mesa-edge"></div>
-              <div class="mesa-label">
-                <span class="mesa-label-dot"></span>
-                <span id="mesaLabelText">Esperando que se cree una sala…</span>
-              </div>
-              <div class="card-center">
-                CARTA
-                <span class="word" id="wordDisplay">----</span>
-                <small id="roleDisplay">
-                  Tu rol y palabra solo aparecen en tu dispositivo.
-                </small>
+            <img src="mesa-impostor.png" alt="Mesa de impostores" class="mesa-img" />
+            <div class="mesa-overlay-card">
+              CARTA
+              <div class="mesa-word" id="wordDisplay">----</div>
+              <div class="mesa-role" id="roleDisplay">
+                Elegí tu nombre para ver tu carta.
               </div>
             </div>
           </div>
 
           <div class="hud">
             <div class="timer">
-              <span class="label">Turno</span>
-              <span class="value" id="turnTimer">00:10</span>
+              <span class="timer-label">Turno</span>
+              <span class="timer-value" id="turnTimer">00:10</span>
             </div>
             <div class="timer">
-              <span class="label">Votación</span>
-              <span class="value" id="voteTimer">03:00</span>
+              <span class="timer-label">Votación</span>
+              <span class="timer-value" id="voteTimer">03:00</span>
             </div>
-            <div class="phase-pill" id="phasePill">
-              <span>Fase: Esperando</span>
-            </div>
-            <div class="chip" id="chipConfig">
-              Sala sin configurar
-            </div>
+            <div class="phase-pill" id="phasePill">Fase: Esperando</div>
+            <div class="chip" id="chipConfig">Sala sin configurar</div>
           </div>
 
           <div class="controls">
-            <button id="btnStartRound" class="primary" disabled>
-              ▶ Iniciar ronda
-            </button>
-            <button id="btnSkipVote" class="skip" disabled>
-              ⏭ Saltar voto / Nadie
-            </button>
+            <button id="btnStart" class="primary" disabled>▶ Iniciar ronda</button>
+            <button id="btnSkipVote" disabled>⏭ Nadie / Saltar voto</button>
           </div>
 
           <div class="voice-panel">
             <div class="voice-row">
               <div class="voice-status">
                 <div class="voice-dot" id="voiceDot"></div>
-                <span id="voiceStatusText">Micrófono en silencio</span>
+                <span id="voiceStatus">Micrófono en silencio</span>
               </div>
-              <button id="btnToggleMic">🎙️ Decir palabra</button>
+              <button id="btnMic">🎙️ Decir palabra</button>
             </div>
-            <div class="voice-row" style="margin-top:4px;">
+            <div class="voice-row">
               <div class="voice-level">
-                <div class="voice-level-inner" id="voiceLevelInner"></div>
+                <div class="voice-level-inner" id="voiceLevel"></div>
               </div>
-              <span style="font-size:.7rem;color:var(--muted);" id="voiceHint">
-                Permití el micrófono para simular el chat de voz.
+              <span id="voiceHint" style="font-size:.72rem; color:var(--muted);">
+                Activá el micrófono sólo cuando sea tu turno.
               </span>
             </div>
             <div class="voice-tip">
-              Cada jugador tiene 10&nbsp;s para decir <strong>una palabra</strong>.
-              Cuando todos hablaron, la votación se abre automáticamente por
-              <strong>3 minutos</strong> y se puede elegir <em>Nadie</em> para
-              saltar voto, como en Among Us.
+              Cada jugador tiene <strong>10 s</strong> para decir una palabra.
+              Después de que hablen todos, se abre votación por <strong>3 minutos</strong>.
             </div>
           </div>
         </div>
@@ -587,619 +622,456 @@
   </div>
 
   <script>
-    const mesa3d = document.getElementById("mesa3d");
-    const playersListEl = document.getElementById("playersList");
-    const wordDisplay = document.getElementById("wordDisplay");
-    const roleDisplay = document.getElementById("roleDisplay");
-    const turnTimerEl = document.getElementById("turnTimer");
-    const voteTimerEl = document.getElementById("voteTimer");
-    const phasePill = document.getElementById("phasePill");
-    const mesaLabelText = document.getElementById("mesaLabelText");
-    const chipConfig = document.getElementById("chipConfig");
-    const headerSubtitle = document.getElementById("headerSubtitle");
-    const logEl = document.getElementById("log");
-    const btnStartRound = document.getElementById("btnStartRound");
-    const btnSkipVote = document.getElementById("btnSkipVote");
-    const mode2d = document.getElementById("mode2d");
-    const mode3d = document.getElementById("mode3d");
-    const mainContent = document.getElementById("mainContent");
-    const roomCodeEl = document.getElementById("roomCode");
+    // ---- Estado básico (demo local, un solo dispositivo) ----
+    const subtitle = document.getElementById('subtitle');
+    const lobby = document.getElementById('lobby');
+    const tabCreate = document.getElementById('tabCreate');
+    const tabJoin = document.getElementById('tabJoin');
+    const panelCreate = document.getElementById('panelCreate');
+    const panelJoin = document.getElementById('panelJoin');
+    const hostNameInput = document.getElementById('hostName');
+    const maxPlayersInput = document.getElementById('maxPlayers');
+    const impostorsInput = document.getElementById('impostors');
+    const roomCodeEl = document.getElementById('roomCode');
+    const btnCreate = document.getElementById('btnCreate');
+    const joinNameInput = document.getElementById('joinName');
+    const joinCodeInput = document.getElementById('joinCode');
+    const btnJoin = document.getElementById('btnJoin');
 
-    // Lobby elements
-    const lobbyOverlay = document.getElementById("lobbyOverlay");
-    const hostNameInput = document.getElementById("hostName");
-    const numPlayersInput = document.getElementById("numPlayers");
-    const numImpostorsInput = document.getElementById("numImpostors");
-    const btnCreateGame = document.getElementById("btnCreateGame");
-    const tabCreate = document.getElementById("tabCreate");
-    const tabJoin = document.getElementById("tabJoin");
-    const panelCreate = document.getElementById("panelCreate");
-    const panelJoin = document.getElementById("panelJoin");
-    const joinCodeInput = document.getElementById("joinCode");
-    const joinNameInput = document.getElementById("joinName");
-    const btnJoinGame = document.getElementById("btnJoinGame");
+    const myPlayerBox = document.getElementById('myPlayerBox');
+    const myPlayerNameEl = document.getElementById('myPlayerName');
 
-    const voiceDot = document.getElementById("voiceDot");
-    const voiceStatusText = document.getElementById("voiceStatusText");
-    const voiceLevelInner = document.getElementById("voiceLevelInner");
-    const voiceHint = document.getElementById("voiceHint");
-    const btnToggleMic = document.getElementById("btnToggleMic");
+    const wordDisplay = document.getElementById('wordDisplay');
+    const roleDisplay = document.getElementById('roleDisplay');
+    const turnTimerEl = document.getElementById('turnTimer');
+    const voteTimerEl = document.getElementById('voteTimer');
+    const phasePill = document.getElementById('phasePill');
+    const chipConfig = document.getElementById('chipConfig');
+    const playersListEl = document.getElementById('playersList');
+    const logEl = document.getElementById('log');
+    const btnStart = document.getElementById('btnStart');
+    const btnSkipVote = document.getElementById('btnSkipVote');
 
-    // Estado de sala / juego
-    let players = []; // {id,name,impostor,el,mouthEl,hasSpoken,vote}
-    let capacity = 0;
-    let impostorCountConfig = 1;
-    let roomCode = null;
+    const btnMic = document.getElementById('btnMic');
+    const voiceDot = document.getElementById('voiceDot');
+    const voiceStatus = document.getElementById('voiceStatus');
+    const voiceLevel = document.getElementById('voiceLevel');
+    const voiceHint = document.getElementById('voiceHint');
+
+    let roomCode = '';
+    let maxPlayers = 0;
+    let impostors = 0;
+    let players = []; // {id,name,impostor,hasSpoken,votes}
+    let myId = null;
     let currentTurn = 0;
-    let turnTime = 10;
+    let phase = 'esperando';
+    let turnSeconds = 10;
+    let voteSeconds = 180;
     let turnInterval = null;
-    let voting = false;
-    let voteTime = 180;
     let voteInterval = null;
+    let localVotesDone = 0;
     let localHasVoted = false;
-    let votesRegistered = 0;
-    let myPlayerIndex = -1;
-    let isHost = false;
-    let currentWord = "CLAVE";
 
-    const maxPlayers = 15;
-    const maxImpostors = 4;
-    const colors = [
-      "#f97316","#22c55e","#3b82f6","#e11d48",
-      "#a855f7","#22d3ee","#facc15","#4ade80",
-      "#fb7185","#2dd4bf","#818cf8","#fbbf24",
-      "#f97373","#38bdf8","#a3e635"
+    const WORDS = [
+      'GALAXIA','MISTERIO','AVENTURA','DESIERTO','OCÉANO','LABERINTO','TRAVESÍA',
+      'MONTAÑA','ISLA','INVESTIGACIÓN','SECRETO','FESTIVAL','HOSPITAL','CIUDAD',
+      'MUSEO','TORMENTA','PUEBLO','TEATRO','MERCADO','PLANETA','CIRCO','CASTILLO',
+      'RECUERDO','NOCHE','VERANO','INVIERNO','CARRERA','MISIÓN','EXPEDICIÓN'
     ];
+    let secretWord = '---';
 
-    const wordPool = [
-      "GALAXIA","MISTERIO","AVENTURA","DESIERTO","OCÉANO",
-      "LABERINTO","TRAVESÍA","MONTAÑA","ISLA","INVESTIGACIÓN",
-      "SECRETO","FESTIVAL","HOSPITAL","CIUDAD","MUSEO",
-      "TORMENTA","PUEBLO","TEATRO","MERCADO","PLANETA",
-      "CIRCO","CASTILLO","RECUERDO","NOCHE","VERANO"
-    ];
-
-    function randomRoomCode(){
-      const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-      let code = "";
-      for (let i=0;i<3;i++){
-        code += chars[Math.floor(Math.random()*chars.length)];
-      }
-      return "ARC-" + code;
-    }
-
-    function randomWord(){
-      return wordPool[Math.floor(Math.random()*wordPool.length)];
-    }
-
-    function log(tag,text){
-      const line = document.createElement("div");
-      line.className = "log-line";
-      const tTag = document.createElement("span");
-      tTag.className = "tag";
-      tTag.textContent = tag;
-      const tText = document.createElement("span");
-      tText.textContent = text;
-      line.appendChild(tTag);
-      line.appendChild(tText);
+    function log(tag, text) {
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      const t = document.createElement('span');
+      t.className = 'log-tag';
+      t.textContent = tag;
+      const msg = document.createElement('span');
+      msg.textContent = text;
+      line.appendChild(t);
+      line.appendChild(msg);
       logEl.appendChild(line);
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    // Lobby tabs
-    tabCreate.addEventListener("click",()=>{
-      tabCreate.classList.add("active");
-      tabJoin.classList.remove("active");
-      panelCreate.style.display = "";
-      panelJoin.style.display = "none";
-    });
-    tabJoin.addEventListener("click",()=>{
-      tabJoin.classList.add("active");
-      tabCreate.classList.remove("active");
-      panelCreate.style.display = "none";
-      panelJoin.style.display = "";
-    });
+    function randomRoomCode() {
+      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 3; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return 'ARC-' + code;
+    }
 
-    // Crear sala
-    btnCreateGame.addEventListener("click",()=>{
-      const hostName = (hostNameInput.value || "").trim();
-      if (!hostName){
-        alert("Escribí tu nombre para crear la sala.");
+    function assignRoles() {
+      const indices = [...Array(players.length).keys()];
+      // elegir impostores
+      let remaining = impostors;
+      while (remaining > 0 && indices.length) {
+        const idx = Math.floor(Math.random() * indices.length);
+        const pIndex = indices.splice(idx,1)[0];
+        players[pIndex].impostor = true;
+        remaining--;
+      }
+      // palabra clave
+      secretWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+    }
+
+    function updateMyCard() {
+      if (myId == null) {
+        wordDisplay.textContent = '----';
+        roleDisplay.textContent = 'Elegí tu nombre para ver tu carta.';
         return;
       }
-      let nPlayers = Math.min(maxPlayers, Math.max(3, parseInt(numPlayersInput.value || "3",10)));
-      let nImpostors = Math.min(maxImpostors, Math.max(1, parseInt(numImpostorsInput.value || "1",10)));
-      if (nImpostors >= nPlayers){
-        nImpostors = Math.max(1, nPlayers - 1);
+      const me = players.find(p => p.id === myId);
+      if (!me) return;
+      if (me.impostor) {
+        wordDisplay.textContent = 'IMPOSTOR';
+        roleDisplay.textContent = 'No reveles tu rol. Mezclate con el resto.';
+      } else {
+        wordDisplay.textContent = secretWord;
+        roleDisplay.textContent = 'Decí algo relacionado sin decir la palabra exacta.';
       }
-      capacity = nPlayers;
-      impostorCountConfig = nImpostors;
+    }
+
+    function renderPlayers() {
+      playersListEl.innerHTML = '';
+      players.forEach((p, index) => {
+        const item = document.createElement('div');
+        item.className = 'player-item';
+        const main = document.createElement('div');
+        main.className = 'player-item-main';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'player-name';
+        nameEl.textContent = p.name;
+        const sub = document.createElement('span');
+        sub.className = 'player-sub';
+        if (phase === 'votacion') {
+          sub.textContent = 'Jugador en votación';
+        } else if (phase === 'palabras' && index === currentTurn) {
+          sub.textContent = 'Hablando…';
+        } else if (phase === 'palabras' && p.hasSpoken) {
+          sub.textContent = 'Ya habló';
+        } else {
+          sub.textContent = 'Esperando turno';
+        }
+        main.appendChild(nameEl);
+        main.appendChild(sub);
+
+        const right = document.createElement('div');
+        const btnVote = document.createElement('button');
+        btnVote.textContent = 'Votar';
+        btnVote.disabled = !(phase === 'votacion') || localHasVoted;
+        btnVote.addEventListener('click', () => {
+          if (phase !== 'votacion' || localHasVoted) return;
+          p.votes++;
+          localHasVoted = true;
+          localVotesDone++;
+          renderPlayers();
+          log('VOTO', 'Votaste a ' + p.name + '.');
+          if (localVotesDone >= players.length) {
+            endVoting('Todos votaron');
+          }
+        });
+        right.appendChild(btnVote);
+
+        item.appendChild(main);
+        item.appendChild(right);
+        playersListEl.appendChild(item);
+      });
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    }
+
+    function setPhase(newPhase) {
+      phase = newPhase;
+      if (phase === 'palabras') {
+        phasePill.classList.remove('vote');
+        phasePill.textContent = 'Fase: Palabras';
+      } else if (phase === 'votacion') {
+        phasePill.classList.add('vote');
+        phasePill.textContent = 'Fase: Votación';
+      } else {
+        phasePill.classList.remove('vote');
+        phasePill.textContent = 'Fase: Esperando';
+      }
+      renderPlayers();
+    }
+
+    function startTurnTimer() {
+      clearInterval(turnInterval);
+      turnSeconds = 10;
+      turnTimerEl.textContent = formatTime(turnSeconds);
+      setPhase('palabras');
+      renderPlayers();
+      turnInterval = setInterval(() => {
+        turnSeconds--;
+        turnTimerEl.textContent = formatTime(turnSeconds);
+        if (turnSeconds <= 0) {
+          clearInterval(turnInterval);
+          endTurn('Tiempo agotado');
+        }
+      }, 1000);
+    }
+
+    function endTurn(reason) {
+      const p = players[currentTurn];
+      if (p) {
+        p.hasSpoken = true;
+        log('RONDA', p.name + ' terminó su turno. (' + reason + ')');
+      }
+      const remaining = players.findIndex(pl => !pl.hasSpoken);
+      if (remaining === -1) {
+        startVoting();
+      } else {
+        currentTurn = remaining;
+        startTurnTimer();
+        log('RONDA', 'Turno de ' + players[currentTurn].name + '.');
+      }
+      renderPlayers();
+    }
+
+    function startVoting() {
+      clearInterval(turnInterval);
+      setPhase('votacion');
+      btnSkipVote.disabled = false;
+      btnStart.disabled = true;
+      voteSeconds = 180;
+      voteTimerEl.textContent = formatTime(voteSeconds);
+      localVotesDone = 0;
+      localHasVoted = false;
+      renderPlayers();
+      log('VOTO', 'Comienza la votación (3 minutos).');
+      voteInterval = setInterval(() => {
+        voteSeconds--;
+        voteTimerEl.textContent = formatTime(voteSeconds);
+        if (voteSeconds <= 0) {
+          clearInterval(voteInterval);
+          endVoting('Tiempo agotado');
+        }
+      }, 1000);
+    }
+
+    function endVoting(reason) {
+      clearInterval(voteInterval);
+      btnSkipVote.disabled = true;
+      btnStart.disabled = false;
+      setPhase('esperando');
+      voteTimerEl.textContent = '03:00';
+
+      let kicked = null;
+      let maxVotes = 0;
+      players.forEach(p => {
+        if (p.votes > maxVotes) {
+          maxVotes = p.votes;
+          kicked = p;
+        }
+      });
+      if (!kicked || maxVotes === 0) {
+        log('VOTO', 'Nadie fue expulsado. (' + reason + ')');
+      } else {
+        log('VOTO',
+          kicked.name + ' fue expulsado con ' + maxVotes +
+          ' votos. ' + (kicked.impostor ? '¡Era impostor!' : 'Era ciudadano.')
+        );
+      }
+      players.forEach(p => { p.hasSpoken = false; p.votes = 0; });
+      currentTurn = 0;
+      renderPlayers();
+    }
+
+    // ----- Lobby lógica (demo) -----
+    tabCreate.addEventListener('click', () => {
+      tabCreate.classList.add('active');
+      tabJoin.classList.remove('active');
+      panelCreate.style.display = '';
+      panelJoin.style.display = 'none';
+    });
+    tabJoin.addEventListener('click', () => {
+      tabJoin.classList.add('active');
+      tabCreate.classList.remove('active');
+      panelCreate.style.display = 'none';
+      panelJoin.style.display = '';
+    });
+
+    btnCreate.addEventListener('click', () => {
+      const name = (hostNameInput.value || '').trim() || 'Host';
+      const mp = Math.max(3, Math.min(15, parseInt(maxPlayersInput.value || '10', 10)));
+      let imp = Math.max(1, Math.min(4, parseInt(impostorsInput.value || '3', 10)));
+      if (imp >= mp) imp = Math.max(1, mp-1);
+      maxPlayersInput.value = mp;
+      impostorsInput.value = imp;
+
       roomCode = randomRoomCode();
       roomCodeEl.textContent = roomCode;
-      joinCodeInput.value = roomCode;
+      maxPlayers = mp;
+      impostors = imp;
 
-      resetRoom();
-      addPlayer(hostName); // el host entra primero
-      myPlayerIndex = 0;
-      isHost = true;
-
-      headerSubtitle.textContent =
-        capacity + " jugadores máx · " + impostorCountConfig +
-        " impostores · Micrófono obligatorio";
-      chipConfig.textContent =
-        "Hasta " + capacity + " jugadores · " + impostorCountConfig + " impostores";
-      mesaLabelText.textContent = "Sala creada. Esperando que todos se unan.";
-      log("SISTEMA", hostName + " creó la sala " + roomCode + ".");
-      lobbyOverlay.style.display = "none";
-      mainContent.classList.remove("blurred");
-      btnStartRound.disabled = false; // solo se ve en host
-    });
-
-    // Unirse
-    btnJoinGame.addEventListener("click",()=>{
-      if (!roomCode){
-        alert("Primero se tiene que crear una sala en este dispositivo (demo local).");
-        return;
-      }
-      const name = (joinNameInput.value || "").trim();
-      const code = (joinCodeInput.value || "").trim().toUpperCase();
-      if (!name){
-        alert("Escribí tu nombre para unirte.");
-        return;
-      }
-      if (code !== roomCode){
-        alert("Ese código no coincide con la sala actual.");
-        return;
-      }
-      // ¿ya existe con ese nombre?
-      let idx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-      if (idx === -1){
-        if (players.length >= capacity){
-          alert("La sala está llena (" + capacity + " jugadores).");
-          return;
-        }
-        idx = addPlayer(name);
-        log("SISTEMA", name + " se unió a la sala.");
-      }
-      myPlayerIndex = idx;
-      isHost = false;
-      lobbyOverlay.style.display = "none";
-      mainContent.classList.remove("blurred");
-      updateRoleCard();
-    });
-
-    function resetRoom(){
-      // limpiar jugadores y mesa
       players = [];
-      mesa3d.querySelectorAll(".player").forEach(p => p.remove());
-      playersListEl.innerHTML = "";
-      currentTurn = 0;
-      turnTimerEl.textContent = "00:10";
-      voteTimerEl.textContent = "03:00";
-      phasePill.classList.remove("vote");
-      phasePill.innerHTML = "<span>Fase: Esperando</span>";
-      wordDisplay.textContent = "----";
-      roleDisplay.textContent = "Tu rol y palabra solo aparecen en tu dispositivo.";
-      logEl.innerHTML = "";
-      btnSkipVote.disabled = true;
-      voting = false;
-      clearInterval(turnInterval);
-      clearInterval(voteInterval);
-      disableMic(false);
-    }
-
-    function addPlayer(name){
-      const idx = players.length;
-      const playerEl = document.createElement("div");
-      playerEl.className = "player";
-      const body = document.createElement("div");
-      body.className = "player-body";
-      body.style.setProperty("--color", colors[idx % colors.length]);
-      const visor = document.createElement("div");
-      visor.className = "player-visor";
-      const mouth = document.createElement("div");
-      mouth.className = "player-mouth";
-      body.appendChild(visor);
-      body.appendChild(mouth);
-      playerEl.appendChild(body);
-      mesa3d.appendChild(playerEl);
-
-      const player = {
-        id: idx,
+      const hostPlayer = {
+        id: Date.now(),
         name,
-        impostor:false,
-        el:playerEl,
-        mouthEl:mouth,
-        hasSpoken:false,
-        vote:0
+        impostor: false,
+        hasSpoken: false,
+        votes: 0
       };
-      players.push(player);
-      layoutPlayers();
+      players.push(hostPlayer);
+      myId = hostPlayer.id;
+      myPlayerNameEl.textContent = name;
+      subtitle.textContent = mp + ' jugadores máx · ' + imp +
+        ' impostores · Ronda de palabra + votación';
+      chipConfig.textContent = mp + ' jugadores máx · ' + imp +
+        ' impostores · Micrófono obligatorio';
+      lobby.style.display = 'none';
+      assignRoles();
+      updateMyCard();
+      renderPlayers();
+      btnStart.disabled = false;
+      log('SISTEMA', 'Sala ' + roomCode + ' creada. Este dispositivo juega como ' + name + '.');
+    });
 
-      // Lista lateral
-      const row = document.createElement("div");
-      row.className = "player-item";
-      row.dataset.index = String(idx);
-      const left = document.createElement("div");
-      left.style.display = "flex";
-      left.style.flexDirection = "column";
-      left.innerHTML =
-        '<span class="name">' + name + '</span>' +
-        '<span class="sub">Jugador en mesa</span>';
-      const right = document.createElement("div");
-      const voteBtn = document.createElement("button");
-      voteBtn.textContent = "Votar";
-      voteBtn.className = "vote-btn";
-      voteBtn.disabled = true;
-      voteBtn.addEventListener("click",()=>{
-        if (!voting || localHasVoted || myPlayerIndex === -1) return;
-        player.vote++;
-        localHasVoted = true;
-        playersListEl.querySelectorAll(".vote-btn").forEach(b => b.disabled = true);
-        btnSkipVote.disabled = false;
-        log("VOTO","Vos votaste a " + player.name + ".");
-      });
-      right.appendChild(voteBtn);
-      row.appendChild(left);
-      row.appendChild(right);
-      playersListEl.appendChild(row);
-
-      return idx;
-    }
-
-    function layoutPlayers(){
-      const radius = 120;
-      const n = players.length;
-      players.forEach((p,i)=>{
-        const angle = (2*Math.PI * i)/Math.max(1,n);
-        const x = radius * Math.cos(angle);
-        const y = radius * Math.sin(angle);
-        const deg = angle * 180/Math.PI;
-        p.el.style.transform =
-          "translate3d(" + x + "px," + y + "px,16px) rotateZ(" + (deg+90) + "deg)";
-        if (angle > -Math.PI/2 && angle < Math.PI/2){
-          p.el.classList.add("front");
-        }else{
-          p.el.classList.remove("front");
-        }
-      });
-    }
-
-    function assignRolesAndWord(){
-      if (players.length < 3){
-        alert("Necesitás al menos 3 jugadores para empezar.");
-        return false;
-      }
-      let impostors = Math.min(impostorCountConfig, Math.max(1, players.length-1));
-      const chosen = new Set();
-      while (chosen.size < impostors){
-        chosen.add(Math.floor(Math.random()*players.length));
-      }
-      players.forEach((p,i)=>{
-        p.impostor = chosen.has(i);
-        p.hasSpoken = false;
-        p.vote = 0;
-        p.el.classList.remove("kicked");
-      });
-      currentWord = randomWord();
-      updateRoleCard();
-      return true;
-    }
-
-    function updateRoleCard(){
-      if (myPlayerIndex === -1 || !players[myPlayerIndex]){
-        wordDisplay.textContent = "----";
-        roleDisplay.textContent = "Unite a la sala para ver tu carta.";
+    btnJoin.addEventListener('click', () => {
+      const name = (joinNameInput.value || '').trim() || 'Jugador';
+      if (!roomCode) {
+        alert('En esta demo la sala se crea sólo en este dispositivo. Más adelante se conecta online.');
         return;
       }
-      const me = players[myPlayerIndex];
-      if (me.impostor){
-        wordDisplay.textContent = "IMPOSTOR";
-        roleDisplay.textContent = "No reveles tu rol. Mezclate con el resto.";
-      }else{
-        wordDisplay.textContent = currentWord;
-        roleDisplay.textContent =
-          "Decí una palabra relacionada sin decir directamente la palabra.";
-      }
-    }
-
-    function formatSeconds(sec){
-      const m = Math.floor(sec/60);
-      const s = sec%60;
-      return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
-    }
-
-    function setPhaseVoting(active){
-      if (active){
-        phasePill.classList.add("vote");
-        phasePill.innerHTML = "<span>Fase: Votación</span>";
-        mesaLabelText.textContent = "Votación abierta";
-      }else{
-        phasePill.classList.remove("vote");
-        phasePill.innerHTML = "<span>Fase: Palabra</span>";
-        mesaLabelText.textContent = "Ronda de palabras en curso";
-      }
-    }
-
-    function highlightSpeaking(active){
-      players.forEach((p,idx)=>{
-        if (idx === currentTurn && active){
-          p.el.classList.add("speaking");
-        }else{
-          p.el.classList.remove("speaking");
-        }
-      });
-    }
-
-    function startTurnTimer(){
-      clearInterval(turnInterval);
-      turnTime = 10;
-      turnTimerEl.textContent = formatSeconds(turnTime);
-      highlightSpeaking(true);
-      playSfx("turn");
-      turnInterval = setInterval(()=>{
-        turnTime--;
-        turnTimerEl.textContent = formatSeconds(turnTime);
-        if (turnTime <= 0){
-          clearInterval(turnInterval);
-          endTurn("Tiempo agotado");
-        }
-      },1000);
-    }
-
-    function endTurn(reason){
-      highlightSpeaking(false);
-      const p = players[currentTurn];
-      if (p){
-        p.hasSpoken = true;
-        log("RONDA", p.name + " terminó su turno de palabra. (" + reason + ")");
-      }
-      goNextOrVoting();
-    }
-
-    function goNextOrVoting(){
-      if (players.every(p=>p.hasSpoken)){
-        startVoting();
+      const code = (joinCodeInput.value || '').trim().toUpperCase();
+      if (code !== roomCode) {
+        alert('El código no coincide con la sala actual de esta demo.');
         return;
       }
-      let next = currentTurn;
-      for (let i=0;i<players.length;i++){
-        next = (next+1) % players.length;
-        if (!players[next].hasSpoken){
-          currentTurn = next;
-          log("RONDA","Turno de " + players[currentTurn].name + ".");
-          startTurnTimer();
-          return;
-        }
+      if (players.length >= maxPlayers) {
+        alert('La sala ya está completa.');
+        return;
       }
-      startVoting();
-    }
+      const newPlayer = {
+        id: Date.now() + Math.floor(Math.random()*10000),
+        name,
+        impostor: false,
+        hasSpoken: false,
+        votes: 0
+      };
+      players.push(newPlayer);
+      myId = newPlayer.id;
+      myPlayerNameEl.textContent = name;
+      lobby.style.display = 'none';
+      assignRoles();
+      updateMyCard();
+      renderPlayers();
+      log('SISTEMA', 'Nuevo jugador en la mesa: ' + name + '. (demo local)');
+    });
 
-    function startVoting(){
-      clearInterval(turnInterval);
-      highlightSpeaking(false);
-      voting = true;
-      localHasVoted = false;
-      votesRegistered = 0;
-      setPhaseVoting(true);
-      btnSkipVote.disabled = false;
-      btnStartRound.disabled = true;
-      voteTime = 180;
-      voteTimerEl.textContent = formatSeconds(voteTime);
-      log("VOTO","Comienza la votación (3 minutos). Se corta antes si votan todos.");
-      playersListEl.querySelectorAll(".vote-btn").forEach(btn=>{
-        btn.disabled = (myPlayerIndex === -1);
-      });
-      playSfx("vote");
-      voteInterval = setInterval(()=>{
-        voteTime--;
-        voteTimerEl.textContent = formatSeconds(voteTime);
-        if (voteTime <= 0){
-          clearInterval(voteInterval);
-          finishVoting("Tiempo agotado");
-        }
-      },1000);
-    }
-
-    function finishVoting(reason){
-      voting = false;
-      clearInterval(voteInterval);
-      setPhaseVoting(false);
-      btnSkipVote.disabled = true;
-      btnStartRound.disabled = !isHost;
-      voteTimerEl.textContent = "03:00";
-      playersListEl.querySelectorAll(".vote-btn").forEach(btn=>btn.disabled = true);
-
-      let expelled = null;
-      let topVotes = 0;
-      players.forEach(p=>{
-        if (p.vote > topVotes){
-          topVotes = p.vote;
-          expelled = p;
-        }
-      });
-      if (!expelled || topVotes === 0){
-        log("VOTO","Nadie fue expulsado (" + reason + ").");
-      }else{
-        log("VOTO",
-          expelled.name + " fue expulsado con " + topVotes + " votos. " +
-          (expelled.impostor ? "¡Era impostor!" : "Era ciudadano."));
-        if (expelled.el){
-          expelled.el.classList.add("kicked");
-        }
+    btnStart.addEventListener('click', () => {
+      if (players.length < 3) {
+        alert('Necesitás al menos 3 jugadores para empezar la ronda.');
+        return;
       }
-      players.forEach(p=>{
-        p.hasSpoken = false;
-        p.vote = 0;
-      });
+      players.forEach(p => { p.hasSpoken = false; p.votes = 0; });
       currentTurn = 0;
-      votesRegistered = 0;
-      updateRoleCard();
-    }
-
-    function registerVote(skip){
-      if (!voting) return;
-      votesRegistered++;
-      if (skip){
-        log("VOTO","Un jugador eligió: Nadie (saltar voto).");
-      }
-      if (votesRegistered >= players.length){
-        clearInterval(voteInterval);
-        finishVoting("Todos votaron");
-      }
-    }
-
-    btnStartRound.addEventListener("click",()=>{
-      if (!isHost){
-        alert("Solo el host puede iniciar la ronda.");
-        return;
-      }
-      if (!assignRolesAndWord()) return;
-      currentTurn = 0;
-      setPhaseVoting(false);
-      btnSkipVote.disabled = true;
-      log("RONDA","Nueva ronda iniciada. Empieza " + players[currentTurn].name + ".");
-      mesaLabelText.textContent = "Ronda de palabras en curso";
-      updateRoleCard();
+      setPhase('palabras');
       startTurnTimer();
+      log('RONDA', 'Empieza la ronda. Arranca ' + players[0].name + '.');
     });
 
-    btnSkipVote.addEventListener("click",()=>{
-      if (!voting) return;
-      registerVote(true);
+    btnSkipVote.addEventListener('click', () => {
+      if (phase !== 'votacion') return;
+      localVotesDone++;
+      log('VOTO', 'Marcaste "Nadie / Saltar voto".');
+      if (localVotesDone >= players.length) {
+        endVoting('Todos votaron / Nadie');
+      }
     });
 
-    mode2d.addEventListener("click",()=>{
-      mode2d.classList.add("active");
-      mode3d.classList.remove("active");
-      mesa3d.style.transform = "none";
-    });
-    mode3d.addEventListener("click",()=>{
-      mode3d.classList.add("active");
-      mode2d.classList.remove("active");
-      mesa3d.style.transform = "rotateX(62deg) rotateZ(-35deg) translateY(40px)";
-    });
-
-    // --- Voz (micrófono) ---
+    // ---- Voz / Micrófono (solo en turno propio) ----
+    let micOn = false;
     let audioContext = null;
     let analyser = null;
     let micStream = null;
-    let voiceAnimationId = null;
-    let micOn = false;
+    let levelAnimationId = null;
 
-    async function enableMic(){
-      if (micOn) return;
-      if (myPlayerIndex === -1){
-        alert("Unite a la sala para poder hablar.");
+    function stopMic(endTurnToo) {
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      if (levelAnimationId) cancelAnimationFrame(levelAnimationId);
+      levelAnimationId = null;
+      voiceLevel.style.width = '0%';
+      voiceDot.classList.remove('active');
+      voiceStatus.textContent = 'Micrófono en silencio';
+      voiceHint.textContent = 'Activá el micrófono sólo cuando sea tu turno.';
+      btnMic.textContent = '🎙️ Decir palabra';
+      micOn = false;
+      if (endTurnToo && phase === 'palabras' && players[currentTurn] && players[currentTurn].id === myId) {
+        clearInterval(turnInterval);
+        endTurn('Cortó el micrófono');
+      }
+    }
+
+    async function startMic() {
+      if (!players.length || myId == null) {
+        alert('Primero unite a la sala.');
         return;
       }
-      if (voting){
-        alert("El micrófono solo se usa durante los turnos de palabra, no en la votación.");
+      const currentPlayer = players[currentTurn];
+      if (!currentPlayer || currentPlayer.id !== myId) {
+        alert('No es tu turno. Esperá a que te toque.');
         return;
       }
-      if (currentTurn !== myPlayerIndex){
-        alert("No es tu turno. Esperá a que llegue tu turno en la ronda.");
-        return;
-      }
-      try{
-        micStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioContext.createMediaStreamSource(micStream);
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
-        source.connect(analyser); // solo medimos nivel, no reproducimos audio
+        source.connect(analyser);
 
-        startVoiceLevel();
-        voiceDot.classList.add("active");
-        voiceStatusText.textContent = "Hablando… decí tu palabra.";
-        voiceHint.textContent = "El audio no se guarda, solo se usa el nivel para la animación.";
         micOn = true;
-        btnToggleMic.textContent = "⏹️ Cortar voz";
-        log("VOZ","Micrófono activado para el turno de " + players[myPlayerIndex].name + ".");
-      }catch(err){
+        voiceDot.classList.add('active');
+        voiceStatus.textContent = 'Hablando…';
+        voiceHint.textContent = 'Cuando termines tu palabra, cortá el micrófono.';
+        btnMic.textContent = '⏹️ Cortar voz';
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function updateLevel() {
+          if (!analyser) return;
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+          const avg = sum / bufferLength;
+          const pct = Math.min(100,(avg/255)*120);
+          voiceLevel.style.width = pct.toFixed(0) + '%';
+          levelAnimationId = requestAnimationFrame(updateLevel);
+        }
+        updateLevel();
+      } catch (err) {
         console.error(err);
-        voiceHint.textContent = "No se pudo acceder al micrófono. Revisá permisos del navegador.";
-        log("ERROR","Permiso de micrófono denegado.");
+        alert('No se pudo usar el micrófono. Revisá los permisos del navegador.');
       }
     }
 
-    function disableMic(triggerTurnEnd){
-      if (!micOn && !micStream) return;
-      micOn = false;
-      if (micStream){
-        micStream.getTracks().forEach(t => t.stop());
-        micStream = null;
-      }
-      if (audioContext){
-        audioContext.close();
-        audioContext = null;
-      }
-      analyser = null;
-      if (voiceAnimationId) cancelAnimationFrame(voiceAnimationId);
-      voiceAnimationId = null;
-      voiceLevelInner.style.width = "0%";
-      voiceDot.classList.remove("active");
-      voiceStatusText.textContent = "Micrófono en silencio";
-      voiceHint.textContent = "Permití el micrófono para simular el chat de voz.";
-      btnToggleMic.textContent = "🎙️ Decir palabra";
-      log("VOZ","Micrófono desactivado.");
-      if (triggerTurnEnd && !voting && turnInterval && currentTurn === myPlayerIndex){
-        clearInterval(turnInterval);
-        endTurn("Cortó el micrófono");
-      }
-    }
-
-    function startVoiceLevel(){
-      if (!analyser) return;
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      function draw(){
-        if (!analyser){ return; }
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i=0;i<bufferLength;i++) sum += dataArray[i];
-        const avg = sum / bufferLength;
-        const pct = Math.min(100, (avg/255)*120);
-        voiceLevelInner.style.width = pct.toFixed(0) + "%";
-        voiceAnimationId = requestAnimationFrame(draw);
-      }
-      draw();
-    }
-
-    btnToggleMic.addEventListener("click",()=>{
-      if (micOn){
-        disableMic(true);
-      }else{
-        enableMic();
+    btnMic.addEventListener('click', () => {
+      if (micOn) {
+        stopMic(true);
+      } else {
+        startMic();
       }
     });
 
-    window.addEventListener("beforeunload",()=>{
-      disableMic(false);
+    window.addEventListener('beforeunload', () => {
+      stopMic(false);
     });
-
-    // --- SFX simples (beeps) ---
-    function playSfx(type){
-      try{
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        if (type === "turn") osc.frequency.value = 740;
-        else if (type === "vote") osc.frequency.value = 520;
-        else osc.frequency.value = 660;
-        gain.gain.setValueAtTime(0.001, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
-        osc.onended = () => ctx.close();
-      }catch(e){
-        console.warn("SFX no soportado", e);
-      }
-    }
   </script>
 </body>
 </html>
