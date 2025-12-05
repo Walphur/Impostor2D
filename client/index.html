@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Impostor Arcane - Mesa 3D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Versión demo: toda la UI y lógica están en este archivo -->
   <style>
     :root {
       --bg: #05060a;
@@ -32,6 +33,7 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      position: relative;
     }
     header {
       display: flex;
@@ -95,6 +97,13 @@
       display: grid;
       grid-template-columns: minmax(0,2.1fr) minmax(0,1.2fr);
       gap: 16px;
+      filter: blur(0);
+      transition: filter .25s ease, opacity .25s ease;
+    }
+    main.blurred {
+      filter: blur(3px);
+      opacity: 0.6;
+      pointer-events: none;
     }
     @media (max-width: 840px) {
       main { grid-template-columns: 1fr; }
@@ -355,18 +364,13 @@
       box-shadow: 0 0 18px rgba(22,163,74,0.7);
       font-weight: 600;
     }
-    button.danger {
-      background: radial-gradient(circle at 0 0, #f97373, #b91c1c);
-      color: #fef2f2;
-      border-color: rgba(248,113,113,0.9);
-    }
     button.skip {
       background: rgba(15,23,42,0.95);
       border-style: dashed;
       opacity: .9;
     }
     button:disabled {
-      opacity: .4;
+      opacity: .35;
       cursor: default;
       box-shadow: none;
     }
@@ -412,22 +416,16 @@
     .player-item span.name {
       font-weight: 500;
     }
-    .player-item span.role {
+    .player-item span.sub {
       font-size: .65rem;
       text-transform: uppercase;
-      letter-spacing: .16em;
+      letter-spacing: .14em;
       color: var(--muted);
     }
-    .player-item span.badge {
-      font-size: .65rem;
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: rgba(34,197,94,0.12);
-      color: #bbf7d0;
-    }
-    .player-item span.badge.impostor {
-      background: rgba(248,113,113,0.16);
-      color: #fecaca;
+    .player-item button.vote-btn {
+      margin-left: 6px;
+      padding: 3px 8px;
+      font-size: .7rem;
     }
     .log {
       max-height: 150px;
@@ -500,18 +498,152 @@
       font-size: .7rem;
       color: var(--muted);
     }
+
+    /* LOBBY */
+    .lobby-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .lobby-panel {
+      width: 100%;
+      max-width: 540px;
+      background: radial-gradient(circle at top, #111827, #020617);
+      border-radius: 22px;
+      padding: 18px;
+      border: 1px solid rgba(148,163,184,0.4);
+      box-shadow: 0 24px 80px rgba(15,23,42,0.9);
+    }
+    .lobby-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .lobby-header h2 {
+      font-size: 1rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    .lobby-tabs {
+      display: inline-flex;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      overflow: hidden;
+      font-size: .75rem;
+    }
+    .lobby-tab {
+      padding: 5px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      background: transparent;
+      color: var(--muted);
+      border-right: 1px solid rgba(148,163,184,0.3);
+    }
+    .lobby-tab:last-child { border-right: none; }
+    .lobby-tab.active {
+      background: rgba(34,197,94,0.12);
+      color: #bbf7d0;
+    }
+    .lobby-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: .8rem;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .field label {
+      font-size: .72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+    }
+    .field input[type="number"],
+    .field input[type="text"],
+    .field select {
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      font-size: .8rem;
+    }
+    .names-list {
+      max-height: 160px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding-right: 4px;
+    }
+    .names-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: .8rem;
+    }
+    .names-row span {
+      font-size: .75rem;
+      color: var(--muted);
+    }
+    .lobby-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .lobby-footer .code {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .18em;
+    }
+    .badge-soon {
+      font-size: .65rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px dashed rgba(148,163,184,0.5);
+      color: var(--muted);
+    }
+
+    .myplayer-select {
+      margin-top: 4px;
+      font-size: .75rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div class="status-dot"></div>
-        <div>
-          <div class="title">Impostor Arcane <span class="badge">Mesa Online</span></div>
-          <div style="font-size:.78rem; color:var(--muted); margin-top:2px;">
-            Hasta 15 jugadores · 4 impostores · Ronda de palabra + votación
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="status-dot"></div>
+          <div>
+            <div class="title">Impostor Arcane <span class="badge">Mesa Online</span></div>
+            <div id="headerSubtitle" style="font-size:.78rem; color:var(--muted); margin-top:2px;">
+              Configurá jugadores y creá la sala para empezar la partida.
+            </div>
           </div>
+        </div>
+        <div class="myplayer-select" id="myPlayerWrapper" style="opacity:.4; pointer-events:none;">
+          <span>Este dispositivo juega como:</span>
+          <select id="myPlayerSelect">
+            <option value="-1">Seleccioná tu jugador (después de crear sala)</option>
+          </select>
         </div>
       </div>
       <div class="mode-toggle">
@@ -520,7 +652,70 @@
       </div>
     </header>
 
-    <main>
+    <!-- LOBBY -->
+    <div class="lobby-overlay" id="lobbyOverlay">
+      <div class="lobby-panel">
+        <div class="lobby-header">
+          <h2>Configurar partida</h2>
+          <div class="lobby-tabs">
+            <button class="lobby-tab active" id="tabCreate">Crear sala</button>
+            <button class="lobby-tab" id="tabJoin">Unirse</button>
+          </div>
+        </div>
+
+        <div id="panelCreate">
+          <div class="lobby-grid">
+            <div class="field">
+              <label for="numPlayers">Jugadores</label>
+              <input id="numPlayers" type="number" min="3" max="15" value="10" />
+            </div>
+            <div class="field">
+              <label for="numImpostors">Impostores</label>
+              <input id="numImpostors" type="number" min="1" max="4" value="3" />
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:6px;">
+            <label>Nombres de los jugadores</label>
+            <div class="names-list" id="namesList"></div>
+          </div>
+          <div class="controls" style="margin-top:4px; justify-content:flex-end;">
+            <button id="btnUpdateNames">Actualizar nombres</button>
+            <button id="btnCreateGame" class="primary">Crear sala y empezar</button>
+          </div>
+          <div class="lobby-footer">
+            <div>
+              Cada persona puede escribir su nombre desde tu pantalla y luego
+              tocar <strong>“Crear sala y empezar”</strong>.
+            </div>
+            <div class="code" id="roomCode">ARC-01</div>
+          </div>
+        </div>
+
+        <div id="panelJoin" style="display:none;">
+          <div class="lobby-grid">
+            <div class="field">
+              <label for="joinCode">Código de sala</label>
+              <input id="joinCode" type="text" placeholder="ARC-01" />
+            </div>
+            <div class="field">
+              <label for="joinName">Tu nombre</label>
+              <input id="joinName" type="text" placeholder="Meli" />
+            </div>
+          </div>
+          <div class="controls" style="justify-content:flex-end;">
+            <button id="btnJoinGame" class="primary">Unirse a sala</button>
+          </div>
+          <div class="lobby-footer">
+            <div>
+              En una versión online real, cada jugador entra con su código y nombre
+              desde su propio dispositivo. Esta demo funciona todo en esta misma pantalla.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <main id="mainContent" class="blurred">
       <section class="card">
         <div class="card-inner">
           <div class="mesa-wrapper">
@@ -530,14 +725,13 @@
               <div class="mesa-edge"></div>
               <div class="mesa-label">
                 <span class="mesa-label-dot"></span>
-                <span>Ronda en progreso</span>
+                <span id="mesaLabelText">Esperando que inicie la ronda</span>
               </div>
               <div class="card-center">
                 CARTA
-                <span class="word" id="wordDisplay">IMPOSTOR</span>
-                <small id="roleDisplay">Tu rol</small>
+                <span class="word" id="wordDisplay">----</span>
+                <small id="roleDisplay">Tu carta aparece sólo en tu pantalla.</small>
               </div>
-              <!-- players will be injected by JS -->
             </div>
           </div>
           <div class="hud">
@@ -550,16 +744,14 @@
               <span class="value" id="voteTimer">03:00</span>
             </div>
             <div class="phase-pill" id="phasePill">
-              <span>Fase: Palabra</span>
+              <span>Fase: Esperando</span>
             </div>
-            <div class="chip">
-              15 jugadores · 4 impostores · Micrófono obligatorio
+            <div class="chip" id="chipConfig">
+              Jugadores y sala sin configurar
             </div>
           </div>
           <div class="controls">
-            <button id="btnStartRound" class="primary">▶ Iniciar ronda</button>
-            <button id="btnNextTurn">⏭ Siguiente jugador</button>
-            <button id="btnStartVoting" class="danger" disabled>🗳️ Empezar votación</button>
+            <button id="btnStartRound" class="primary" disabled>▶ Iniciar ronda</button>
             <button id="btnSkipVote" class="skip" disabled>⏭ Saltar voto / Nadie</button>
           </div>
 
@@ -578,8 +770,9 @@
               <span style="font-size:.7rem; color:var(--muted);" id="voiceHint">Permite el micrófono para simular el chat de voz.</span>
             </div>
             <div class="voice-tip">
-              Cada jugador tiene 10&nbsp;s para decir <strong>una palabra</strong>. Después de que todos hablen, se abre la
-              votación durante <strong>3 minutos</strong> y se puede elegir <em>“Nadie”</em> para saltar voto (como en Among Us).
+              Cada jugador tiene 10&nbsp;s para decir <strong>una palabra</strong>. Cuando todos hablaron, la
+              votación se abre automáticamente por <strong>3 minutos</strong> y se puede elegir
+              <em>“Nadie”</em> para saltar voto (como en Among Us).
             </div>
           </div>
         </div>
@@ -588,7 +781,7 @@
       <section class="card">
         <div class="card-inner">
           <div class="sidebar-section">
-            <h3>Mesa y roles</h3>
+            <h3>Mesa y jugadores</h3>
             <div class="players-list" id="playersList"></div>
           </div>
           <div class="sidebar-section">
@@ -608,17 +801,41 @@
     const turnTimerEl = document.getElementById("turnTimer");
     const voteTimerEl = document.getElementById("voteTimer");
     const phasePill = document.getElementById("phasePill");
+    const mesaLabelText = document.getElementById("mesaLabelText");
+    const chipConfig = document.getElementById("chipConfig");
+    const headerSubtitle = document.getElementById("headerSubtitle");
     const logEl = document.getElementById("log");
     const btnStartRound = document.getElementById("btnStartRound");
-    const btnNextTurn = document.getElementById("btnNextTurn");
-    const btnStartVoting = document.getElementById("btnStartVoting");
     const btnSkipVote = document.getElementById("btnSkipVote");
     const mode2d = document.getElementById("mode2d");
     const mode3d = document.getElementById("mode3d");
+    const mainContent = document.getElementById("mainContent");
+    const roomCodeEl = document.getElementById("roomCode");
+
+    // Lobby elements
+    const lobbyOverlay = document.getElementById("lobbyOverlay");
+    const numPlayersInput = document.getElementById("numPlayers");
+    const numImpostorsInput = document.getElementById("numImpostors");
+    const namesList = document.getElementById("namesList");
+    const btnUpdateNames = document.getElementById("btnUpdateNames");
+    const btnCreateGame = document.getElementById("btnCreateGame");
+    const tabCreate = document.getElementById("tabCreate");
+    const tabJoin = document.getElementById("tabJoin");
+    const panelCreate = document.getElementById("panelCreate");
+    const panelJoin = document.getElementById("panelJoin");
+    const joinCode = document.getElementById("joinCode");
+    const joinName = document.getElementById("joinName");
+    const btnJoinGame = document.getElementById("btnJoinGame");
+
+    // "Mi jugador" selector
+    const myPlayerWrapper = document.getElementById("myPlayerWrapper");
+    const myPlayerSelect = document.getElementById("myPlayerSelect");
 
     let players = [];
+    let playerCount = 0;
+    let impostorCount = 0;
     const maxPlayers = 15;
-    const impostorCount = 4;
+    const maxImpostors = 4;
     const colors = [
       "#f97316","#22c55e","#3b82f6","#e11d48",
       "#a855f7","#22d3ee","#facc15","#4ade80",
@@ -634,6 +851,18 @@
     let voteTime = 180;
     let voteInterval = null;
     let votesDone = 0;
+    let localHasVoted = false;
+
+    let myPlayerIndex = -1;
+
+    function randomRoomCode() {
+      const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+      let code = "";
+      for (let i=0; i<3; i++) {
+        code += chars[Math.floor(Math.random()*chars.length)];
+      }
+      return "ARC-" + code;
+    }
 
     function log(tag, text) {
       const line = document.createElement("div");
@@ -649,17 +878,143 @@
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function createPlayers() {
+    // ----- LOBBY -----
+    function renderNameInputs() {
+      const n = Math.min(maxPlayers, Math.max(3, parseInt(numPlayersInput.value || "3", 10)));
+      numPlayersInput.value = n;
+      namesList.innerHTML = "";
+      for (let i=0; i<n; i++) {
+        const row = document.createElement("div");
+        row.className = "names-row";
+        const label = document.createElement("span");
+        label.textContent = "Jugador " + (i+1);
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = "Jugador " + (i+1);
+        input.dataset.index = i;
+        row.appendChild(label);
+        row.appendChild(input);
+        namesList.appendChild(row);
+      }
+    }
+
+    function getNamesFromInputs() {
+      const inputs = namesList.querySelectorAll("input[type='text']");
+      const names = [];
+      inputs.forEach((inp, idx) => {
+        const val = inp.value.trim();
+        names.push(val || ("Jugador " + (idx+1)));
+      });
+      return names;
+    }
+
+    numPlayersInput.addEventListener("change", renderNameInputs);
+    btnUpdateNames.addEventListener("click", renderNameInputs);
+
+    tabCreate.addEventListener("click", () => {
+      tabCreate.classList.add("active");
+      tabJoin.classList.remove("active");
+      panelCreate.style.display = "";
+      panelJoin.style.display = "none";
+    });
+
+    tabJoin.addEventListener("click", () => {
+      tabJoin.classList.add("active");
+      tabCreate.classList.remove("active");
+      panelCreate.style.display = "none";
+      panelJoin.style.display = "";
+    });
+
+    btnCreateGame.addEventListener("click", () => {
+      const nPlayers = Math.min(maxPlayers, Math.max(3, parseInt(numPlayersInput.value || "3", 10)));
+      let nImpostors = Math.min(maxImpostors, Math.max(1, parseInt(numImpostorsInput.value || "1", 10)));
+      if (nImpostors >= nPlayers) {
+        nImpostors = Math.max(1, nPlayers - 1);
+      }
+      playerCount = nPlayers;
+      impostorCount = nImpostors;
+      const names = getNamesFromInputs();
+      const code = randomRoomCode();
+      roomCodeEl.textContent = code;
+      joinCode.value = code;
+      createPlayers(names);
+      lobbyOverlay.style.display = "none";
+      mainContent.classList.remove("blurred");
+      headerSubtitle.textContent = playerCount + " jugadores · " +
+                                   impostorCount + " impostores · Ronda de palabra + votación";
+      chipConfig.textContent = playerCount + " jugadores · " + impostorCount +
+                               " impostores · Micrófono obligatorio";
+      btnStartRound.disabled = false;
+      mesaLabelText.textContent = "Mesa lista. Empezá la ronda cuando quieran.";
+      log("SISTEMA", "Sala " + code + " creada con " + playerCount + " jugadores.");
+      myPlayerWrapper.style.opacity = "1";
+      myPlayerWrapper.style.pointerEvents = "auto";
+      populateMyPlayerSelect();
+    });
+
+    btnJoinGame.addEventListener("click", () => {
+      if (!players.length) {
+        alert("Primero creá la sala en esta demo. En una versión online real, las salas existirían en un servidor.");
+        return;
+      }
+      const name = (joinName.value || "").trim();
+      if (!name) {
+        alert("Escribí tu nombre para unirte.");
+        return;
+      }
+      const idx = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      if (idx === -1) {
+        alert("En esta demo, el nombre tiene que coincidir con uno de la lista configurada.");
+        return;
+      }
+      myPlayerIndex = idx;
+      myPlayerSelect.value = String(idx);
+      lobbyOverlay.style.display = "none";
+      mainContent.classList.remove("blurred");
+      log("SISTEMA", "Este dispositivo juega como " + players[idx].name + ".");
+      updateRoleCardForMe();
+    });
+
+    function populateMyPlayerSelect() {
+      myPlayerSelect.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "-1";
+      opt.textContent = "Seleccioná tu jugador";
+      myPlayerSelect.appendChild(opt);
+      players.forEach((p, idx) => {
+        const o = document.createElement("option");
+        o.value = String(idx);
+        o.textContent = p.name;
+        myPlayerSelect.appendChild(o);
+      });
+    }
+
+    myPlayerSelect.addEventListener("change", () => {
+      const val = parseInt(myPlayerSelect.value, 10);
+      if (isNaN(val) || val < 0 || val >= players.length) {
+        myPlayerIndex = -1;
+        log("SISTEMA", "Este dispositivo todavía no tiene jugador asignado.");
+      } else {
+        myPlayerIndex = val;
+        log("SISTEMA", "Este dispositivo juega como " + players[val].name + ".");
+        updateRoleCardForMe();
+      }
+    });
+
+    renderNameInputs();
+
+    // ----- MESA -----
+    function createPlayers(names) {
       players = [];
       mesa3d.querySelectorAll(".player").forEach(p => p.remove());
       playersListEl.innerHTML = "";
       const impostors = new Set();
       while (impostors.size < impostorCount) {
-        impostors.add(Math.floor(Math.random()*maxPlayers));
+        impostors.add(Math.floor(Math.random()*playerCount));
       }
       const radius = 120;
-      for (let i=0; i<maxPlayers; i++) {
-        const angle = (2*Math.PI * i)/maxPlayers;
+      for (let i=0; i<playerCount; i++) {
+        const angle = (2*Math.PI * i)/playerCount;
         const x = radius * Math.cos(angle);
         const y = radius * Math.sin(angle);
         const playerEl = document.createElement("div");
@@ -678,14 +1033,13 @@
         playerEl.style.transform = `translate3d(${x}px, ${y}px, 16px) rotateZ(${deg+90}deg)`;
         const player = {
           id: i,
-          name: "Jugador " + (i+1),
+          name: names[i] || ("Jugador " + (i+1)),
           impostor: impostors.has(i),
           el: playerEl,
           mouthEl: mouth,
           hasSpoken: false,
-          vote: null
+          vote: 0
         };
-        // front/back
         if (angle > -Math.PI/2 && angle < Math.PI/2) {
           playerEl.classList.add("front");
         }
@@ -698,12 +1052,23 @@
         left.style.display = "flex";
         left.style.flexDirection = "column";
         left.innerHTML = `<span class="name">${player.name}</span>
-                          <span class="role">${player.impostor ? "Impostor" : "Ciudadano"}</span>`;
+                          <span class="sub">Jugador en mesa</span>`;
         const right = document.createElement("div");
-        const badge = document.createElement("span");
-        badge.className = "badge " + (player.impostor ? "impostor" : "");
-        badge.textContent = player.impostor ? "IMPOSTOR" : "SEGURO";
-        right.appendChild(badge);
+
+        const voteBtn = document.createElement("button");
+        voteBtn.textContent = "Votar";
+        voteBtn.className = "vote-btn";
+        voteBtn.disabled = true;
+        voteBtn.addEventListener("click", () => {
+          if (!voting || localHasVoted || myPlayerIndex === -1) return;
+          player.vote++;
+          localHasVoted = true;
+          playersListEl.querySelectorAll(".vote-btn").forEach(b => b.disabled = true);
+          btnSkipVote.disabled = false;
+          log("VOTO", "Vos votaste a " + player.name + ".");
+        });
+        right.appendChild(voteBtn);
+
         row.appendChild(left);
         row.appendChild(right);
         playersListEl.appendChild(row);
@@ -711,25 +1076,55 @@
       currentTurn = 0;
       votesDone = 0;
       updateCentralCard();
-      log("SISTEMA", "Mesa lista con 15 jugadores y 4 impostores.");
     }
 
     function updateCentralCard() {
-      const player = players[currentTurn];
-      if (!player) return;
-      if (player.impostor) {
+      if (myPlayerIndex === -1 || !players.length) {
+        wordDisplay.textContent = "----";
+        roleDisplay.textContent = "Elegí tu jugador para ver tu carta.";
+        return;
+      }
+      const me = players[myPlayerIndex];
+      if (!me) return;
+      if (me.impostor) {
         wordDisplay.textContent = "IMPOSTOR";
-        roleDisplay.textContent = "Tu palabra es IMPOSIBLE de adivinar 🕵️‍♂️";
+        roleDisplay.textContent = "No reveles tu rol. Mezclate con el resto.";
       } else {
         wordDisplay.textContent = "CLAVE";
-        roleDisplay.textContent = "Describe sin revelar la palabra secreta.";
+        roleDisplay.textContent = "Decí una palabra relacionada sin decir la palabra prohibida.";
       }
+    }
+
+    function updateRoleCardForMe() {
+      updateCentralCard();
     }
 
     function formatSeconds(sec) {
       const m = Math.floor(sec/60);
       const s = sec%60;
       return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+    }
+
+    function setPhaseVoting(active) {
+      if (active) {
+        phasePill.classList.add("vote");
+        phasePill.innerHTML = "<span>Fase: Votación</span>";
+        mesaLabelText.textContent = "Votación abierta";
+      } else {
+        phasePill.classList.remove("vote");
+        phasePill.innerHTML = "<span>Fase: Palabra</span>";
+        mesaLabelText.textContent = "Ronda de palabras en curso";
+      }
+    }
+
+    function playSpeakingAnimation(active) {
+      players.forEach((p, idx) => {
+        if (idx === currentTurn && active) {
+          p.el.classList.add("speaking");
+        } else {
+          p.el.classList.remove("speaking");
+        }
+      });
     }
 
     function startTurnTimer() {
@@ -742,62 +1137,36 @@
         turnTimerEl.textContent = formatSeconds(turnTime);
         if (turnTime <= 0) {
           clearInterval(turnInterval);
-          playSpeakingAnimation(false);
-          const p = players[currentTurn];
-          if (p) {
-            p.hasSpoken = true;
-            log("RONDA", p.name + " terminó su turno de palabra.");
-          }
-          autoNextOrVoting();
+          endTurnForCurrentPlayer("Tiempo agotado");
         }
       }, 1000);
     }
 
-    function playSpeakingAnimation(active) {
-      players.forEach((p, idx) => {
-        if (idx === currentTurn) {
-          if (active) {
-            p.el.classList.add("speaking");
-          } else {
-            p.el.classList.remove("speaking");
-          }
-        } else {
-          p.el.classList.remove("speaking");
-        }
-      });
+    function endTurnForCurrentPlayer(reason) {
+      playSpeakingAnimation(false);
+      const p = players[currentTurn];
+      if (p) {
+        p.hasSpoken = true;
+        log("RONDA", p.name + " terminó su turno de palabra. (" + reason + ")");
+      }
+      autoNextOrVoting();
     }
 
     function autoNextOrVoting() {
       if (players.every(p => p.hasSpoken)) {
         startVotingPhase();
       } else {
-        nextTurn();
-      }
-    }
-
-    function nextTurn() {
-      playSpeakingAnimation(false);
-      let next = currentTurn;
-      for (let i=0; i<players.length; i++) {
-        next = (next + 1) % players.length;
-        if (!players[next].hasSpoken) {
-          currentTurn = next;
-          updateCentralCard();
-          log("RONDA", "Turno de " + players[currentTurn].name + ".");
-          startTurnTimer();
-          return;
+        let next = currentTurn;
+        for (let i=0; i<players.length; i++) {
+          next = (next + 1) % players.length;
+          if (!players[next].hasSpoken) {
+            currentTurn = next;
+            log("RONDA", "Turno de " + players[currentTurn].name + ".");
+            startTurnTimer();
+            return;
+          }
         }
-      }
-      startVotingPhase();
-    }
-
-    function setPhaseVoting(active) {
-      if (active) {
-        phasePill.classList.add("vote");
-        phasePill.innerHTML = "<span>Fase: Votación</span>";
-      } else {
-        phasePill.classList.remove("vote");
-        phasePill.innerHTML = "<span>Fase: Palabra</span>";
+        startVotingPhase();
       }
     }
 
@@ -805,14 +1174,17 @@
       clearInterval(turnInterval);
       playSpeakingAnimation(false);
       voting = true;
+      localHasVoted = false;
       setPhaseVoting(true);
-      btnStartVoting.disabled = true;
       btnSkipVote.disabled = false;
-      btnNextTurn.disabled = true;
       btnStartRound.disabled = true;
       voteTime = 180;
       voteTimerEl.textContent = formatSeconds(voteTime);
       log("VOTO", "Comienza la votación (3 minutos). Se corta antes si votan todos.");
+      playersListEl.querySelectorAll(".vote-btn").forEach(btn => {
+        btn.disabled = (myPlayerIndex === -1);
+      });
+      votesDone = 0;
       voteInterval = setInterval(() => {
         voteTime--;
         voteTimerEl.textContent = formatSeconds(voteTime);
@@ -828,13 +1200,30 @@
       clearInterval(voteInterval);
       setPhaseVoting(false);
       btnSkipVote.disabled = true;
-      btnNextTurn.disabled = false;
       btnStartRound.disabled = false;
       voteTimerEl.textContent = "03:00";
-      log("VOTO", "Votación finalizada (" + reason + ").");
-      players.forEach(p => p.hasSpoken = false);
+      playersListEl.querySelectorAll(".vote-btn").forEach(btn => { btn.disabled = true; });
+
+      let expelled = null;
+      let topVotes = 0;
+      players.forEach(p => {
+        if (p.vote > topVotes) {
+          topVotes = p.vote;
+          expelled = p;
+        }
+      });
+      if (!expelled || topVotes === 0) {
+        log("VOTO", "Nadie fue expulsado (" + reason + ").");
+      } else {
+        log("VOTO", expelled.name + " fue expulsado con " + topVotes + " votos. " +
+            (expelled.impostor ? "¡Era impostor!" : "Era ciudadano."));
+      }
+
+      players.forEach(p => {
+        p.hasSpoken = false;
+        p.vote = 0;
+      });
       currentTurn = 0;
-      updateCentralCard();
       votesDone = 0;
     }
 
@@ -853,28 +1242,15 @@
     }
 
     btnStartRound.addEventListener("click", () => {
-      players.forEach(p => { p.hasSpoken = false; p.vote = null; });
+      if (!players.length) return;
+      players.forEach(p => { p.hasSpoken = false; p.vote = 0; });
       currentTurn = 0;
-      updateCentralCard();
       setPhaseVoting(false);
       votesDone = 0;
-      btnStartVoting.disabled = false;
-      btnNextTurn.disabled = false;
       btnSkipVote.disabled = true;
       log("RONDA", "Nueva ronda iniciada. Empieza " + players[currentTurn].name + ".");
+      mesaLabelText.textContent = "Ronda de palabras en curso";
       startTurnTimer();
-    });
-
-    btnNextTurn.addEventListener("click", () => {
-      clearInterval(turnInterval);
-      playSpeakingAnimation(false);
-      const p = players[currentTurn];
-      if (p) p.hasSpoken = true;
-      autoNextOrVoting();
-    });
-
-    btnStartVoting.addEventListener("click", () => {
-      startVotingPhase();
     });
 
     btnSkipVote.addEventListener("click", () => {
@@ -892,7 +1268,7 @@
       mesa3d.style.transform = "rotateX(62deg) rotateZ(-35deg) translateY(40px)";
     });
 
-    // VOZ (micrófono local para decir la palabra)
+    // VOZ
     const btnToggleMic = document.getElementById("btnToggleMic");
     const voiceDot = document.getElementById("voiceDot");
     const voiceStatusText = document.getElementById("voiceStatusText");
@@ -906,6 +1282,18 @@
     let micOn = false;
 
     async function enableMic() {
+      if (myPlayerIndex === -1) {
+        alert("Primero elegí qué jugador sos (arriba, donde dice 'Este dispositivo juega como').");
+        return;
+      }
+      if (voting) {
+        alert("El micrófono solo se usa durante los turnos de palabra, no en la votación.");
+        return;
+      }
+      if (currentTurn !== myPlayerIndex) {
+        alert("No es tu turno. Esperá a que la ronda llegue a tu jugador.");
+        return;
+      }
       try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -913,13 +1301,19 @@
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
-        voiceHint.textContent = "Micrófono activo. Usa esto como chat de voz local.";
+
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.9;
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        voiceHint.textContent = "Micrófono activo. Se escucha tu voz y se ve el nivel.";
         startVoiceLevel();
         voiceDot.classList.add("active");
         voiceStatusText.textContent = "Hablando… di tu palabra.";
         micOn = true;
         btnToggleMic.textContent = "⏹️ Cortar voz";
-        log("VOZ", "Micrófono activado para el turno actual.");
+        log("VOZ", "Micrófono activado para el turno de " + players[myPlayerIndex].name + ".");
       } catch (err) {
         console.error(err);
         voiceHint.textContent = "No se pudo acceder al micrófono. Revisa permisos del navegador.";
@@ -927,7 +1321,7 @@
       }
     }
 
-    function disableMic() {
+    function disableMic(triggerTurnEnd = false) {
       if (micStream) {
         micStream.getTracks().forEach(t => t.stop());
         micStream = null;
@@ -944,6 +1338,10 @@
       micOn = false;
       btnToggleMic.textContent = "🎙️ Decir palabra";
       log("VOZ", "Micrófono desactivado.");
+      if (triggerTurnEnd && !voting && turnInterval && currentTurn === myPlayerIndex) {
+        clearInterval(turnInterval);
+        endTurnForCurrentPlayer("Cortó el micrófono");
+      }
     }
 
     function startVoiceLevel() {
@@ -965,17 +1363,15 @@
 
     btnToggleMic.addEventListener("click", () => {
       if (micOn) {
-        disableMic();
+        disableMic(true);
       } else {
         enableMic();
       }
     });
 
     window.addEventListener("beforeunload", () => {
-      disableMic();
+      disableMic(false);
     });
-
-    createPlayers();
   </script>
 </body>
 </html>
