@@ -1,80 +1,70 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+export function drawMesa2D(canvas, state) {
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const { width, height } = canvas.getBoundingClientRect();
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-let lastOrder = [];
-let lastCurrent = null;
-let lastTimestamp = 0;
+  ctx.clearRect(0, 0, width, height);
 
-function resizeCanvas(){
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = Math.min(width, height) * 0.28;
 
-function drawTable(timestamp){
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0,0,w,h);
-
-  const grad = ctx.createRadialGradient(w/2,h/2,10,w/2,h/2,Math.max(w,h)/1.2);
-  grad.addColorStop(0,"#0b1120");
-  grad.addColorStop(1,"#020617");
+  // Fondo suave radial
+  const grad = ctx.createRadialGradient(cx, cy - radius * 0.6, radius * 0.1, cx, cy, radius * 1.4);
+  grad.addColorStop(0, '#222947');
+  grad.addColorStop(1, '#050712');
   ctx.fillStyle = grad;
-  ctx.fillRect(0,0,w,h);
+  ctx.fillRect(0, 0, width, height);
 
-  const order = lastOrder;
-  if(!order || !order.length) return;
-
-  const radiusTable = Math.min(w,h)/4;
+  // Círculo mesa
   ctx.beginPath();
-  ctx.arc(w/2,h/2,radiusTable,0,Math.PI*2);
-  ctx.fillStyle = "#111827";
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = "#4b5563";
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(200,210,255,0.28)';
+  ctx.lineWidth = 3;
   ctx.stroke();
 
-  const count = order.length;
-  const radiusPlayers = radiusTable + 60;
+  // Punto rojo centro
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#ff4b6b';
+  ctx.fill();
 
-  const t = timestamp / 1000;
-  const pulse = 1 + 0.15*Math.sin(t*3);
+  const alivePlayers = state.players.filter(p => !p.eliminated);
+  if (alivePlayers.length === 0) return;
 
-  for(let i=0;i<count;i++){
-    const name = order[i];
-    const angle = (i / count) * Math.PI * 2 - Math.PI/2;
-    const x = w/2 + Math.cos(angle)*radiusPlayers;
-    const y = h/2 + Math.sin(angle)*radiusPlayers;
+  const baseAngle = -Math.PI / 2;
+  const step = (Math.PI * 2) / alivePlayers.length;
 
-    const isCurrent = (name === lastCurrent);
+  alivePlayers.forEach((p, index) => {
+    const angle = baseAngle + index * step;
+    const pr = radius * 1.2;
+    const px = cx + Math.cos(angle) * pr;
+    const py = cy + Math.sin(angle) * pr;
 
-    const baseR = 18;
-    const r = isCurrent ? baseR * pulse : baseR;
+    // Circulito jugador
+    const isCurrentTurn = state.currentTurnId && state.currentTurnId === p.id;
+    const outerR = 20;
+    if (isCurrentTurn) {
+      ctx.beginPath();
+      ctx.arc(px, py, outerR + 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(148, 163, 255, 0.45)';
+      ctx.fill();
+    }
 
     ctx.beginPath();
-    ctx.arc(x,y,r,0,Math.PI*2);
-    ctx.fillStyle = isCurrent ? "#22c55e" : "#38bdf8";
+    ctx.arc(px, py, outerR, 0, Math.PI * 2);
+    ctx.fillStyle = p.eliminated ? 'rgba(120,120,120,0.8)' : '#46b7ff';
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "#020617";
-    ctx.stroke();
 
-    ctx.fillStyle = "#e5e7eb";
-    ctx.font = "12px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(name, x, y+32);
-  }
+    // Nombre
+    ctx.fillStyle = '#f5f7ff';
+    ctx.font = '12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(p.name, px, py + outerR + 4);
+  });
 }
-
-function loop(timestamp){
-  lastTimestamp = timestamp;
-  drawTable(timestamp);
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-
-window.updateTurnVisual = function(currentName, order){
-  lastOrder = order || [];
-  lastCurrent = currentName || null;
-};
