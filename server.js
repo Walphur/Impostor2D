@@ -12,7 +12,7 @@ const io = new Server(server, {
 const CLIENT_DIR = path.join(__dirname, 'client');
 app.use(express.static(CLIENT_DIR));
 
-const rooms = {}; // code -> { code, hostId, players, phase, turnIndex, roles, votes }
+const rooms = {}; // code -> { code, hostId, players, phase, turnIndex, roles, votes, spoken }
 
 function makeCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -77,6 +77,7 @@ io.on('connection', (socket)=>{
       turnIndex: 0,
       roles: {},
       votes: {},
+      spoken: {},
     };
     rooms[code] = room;
     socket.join(code);
@@ -135,9 +136,42 @@ io.on('connection', (socket)=>{
     room.phase = 'palabras';
     room.turnIndex = 0;
     room.votes = {};
+    room.spoken = {};
     io.to(code).emit('log','La partida comenzó. Cada uno dice una palabra según su rol.');
     emitRoomState(room);
     cb && cb({ ok:true });
+  });
+
+  // Avanza turno desde el host; al terminar primera ronda inicia votación automática
+  socket.on('advanceTurn', ()=>{
+    const code = socket.data.roomCode;
+    const room = rooms[code];
+    if (!room || room.phase !== 'palabras') return;
+    if (room.hostId !== playerId) return;
+
+    const players = room.players;
+    if (!players.length) return;
+
+    room.spoken = room.spoken || {};
+    const current = players[room.turnIndex];
+    if (current){
+      room.spoken[current.id] = true;
+    }
+
+    const allSpoken = players.length > 0 && players.every(p => room.spoken[p.id]);
+    if (allSpoken){
+      // Pasamos a votación automática
+      room.phase = 'votacion';
+      room.votes = {};
+      io.to(code).emit('votingStarted', { players });
+      io.to(code).emit('log','Todos hablaron. Comienza la votación.');
+      emitRoomState(room);
+      return;
+    }
+
+    // Avanza al siguiente
+    room.turnIndex = (room.turnIndex + 1) % players.length;
+    emitRoomState(room);
   });
 
   socket.on('startVoting', (_, cb)=>{
@@ -151,10 +185,11 @@ io.on('connection', (socket)=>{
       cb && cb({ ok:false, error:'Solo el host puede llamar a votación.' });
       return;
     }
+    const players = room.players;
     room.phase = 'votacion';
     room.votes = {};
-    io.to(code).emit('votingStarted', { players: room.players });
-    io.to(code).emit('log', 'Comienza la votación.');
+    io.to(code).emit('votingStarted', { players });
+    io.to(code).emit('log', 'Comienza la votación (manual).');
     emitRoomState(room);
     cb && cb({ ok:true });
   });
@@ -200,6 +235,7 @@ function resolveVoting(room){
   }
   room.phase = 'palabras';
   room.votes = {};
+  room.spoken = {};
   if (room.turnIndex >= room.players.length) room.turnIndex = 0;
   io.to(room.code).emit('votingResults', { kickedPlayer, isImpostor });
   emitRoomState(room);

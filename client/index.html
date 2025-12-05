@@ -18,12 +18,12 @@
     </div>
   </header>
 
-  <main class="screen screen--home" id="screen-home">
+  <main class="screen screen--home screen--active" id="screen-home">
     <section class="home-left">
       <h1>Elegí cómo jugar</h1>
       <p>Un juego de impostores y palabras. Podés jugar todos en la misma pantalla o crear una sala online.</p>
-      <div class="home-buttons">
-        <button id="btn-home-local" class="btn btn-primary">Modo Local (2D)</button>
+      <div class="home-buttons mode-toggle">
+        <button id="btn-home-local" class="btn btn-primary btn-mode-active">Modo Local (2D)</button>
         <button id="btn-home-online" class="btn btn-secondary">Modo Online</button>
       </div>
       <p class="tip">Tip: para el modo local, conectá la compu a la tele como si fuera una consola.</p>
@@ -107,7 +107,7 @@
       <h2>Impostor (Online)</h2>
     </section>
 
-    <section class="layout">
+    <section class="layout layout-online">
       <aside class="panel">
         <div class="group">
           <h3>Lobby</h3>
@@ -121,7 +121,7 @@
             <input type="text" id="online-room-code" placeholder="Código sala" />
             <button id="online-btn-join" class="btn btn-secondary">Unirse</button>
           </div>
-          <p class="tip">El host puede iniciar la partida cuando estén todos.</p>
+          <p class="tip">Mín. 3 jugadores. El host inicia y se juega una ronda de palabras antes de votar.</p>
         </div>
 
         <div class="group">
@@ -133,6 +133,7 @@
           <h3>Partida</h3>
           <p>Fase: <span id="online-phase">sin sala</span></p>
           <p id="online-turn"></p>
+          <p id="online-timer" class="timer-text"></p>
           <button id="online-btn-start" class="btn btn-success btn-full" disabled>Iniciar partida (host)</button>
         </div>
 
@@ -151,9 +152,14 @@
         </div>
       </aside>
 
-      <section class="online-log-wrap">
-        <h3>Log</h3>
-        <div id="online-log" class="log-box"></div>
+      <section class="online-main">
+        <section class="canvas-wrap canvas-wrap-online">
+          <canvas id="online-canvas"></canvas>
+        </section>
+        <section class="online-log-wrap">
+          <h3>Log</h3>
+          <div id="online-log" class="log-box"></div>
+        </section>
       </section>
     </section>
   </main>

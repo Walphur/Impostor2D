@@ -73,7 +73,7 @@
 
     seeSelect.innerHTML = '<option value="">-- Elegir jugador --</option>';
     voteSelect.innerHTML = '<option value="">-- ¿A quién expulsan? --</option>';
-    state.players.forEach((p,idx)=>{
+    state.players.forEach((p)=>{
       const opt = document.createElement('option');
       opt.value = p.id;
       opt.textContent = p.name;
