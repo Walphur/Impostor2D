@@ -1,14 +1,12 @@
 {
-  "name": "impostor-arcane-3d-online",
+  "name": "impostor-arcane-online",
   "version": "1.0.0",
-  "description": "Impostor Arcane – Modo local 2D + online 3D con voz",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.8.0",
-    "uuid": "^9.0.1"
+    "socket.io": "^4.8.0"
   }
 }
