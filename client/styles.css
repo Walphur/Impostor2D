@@ -16,8 +16,8 @@
   --text-main: #f5f7ff;
   --text-muted: #9ca3c7;
   --radius-lg: 16px;
-  --radius-md: 10px;
-  --shadow-soft: 0 18px 40px rgba(0,0,0,0.45);
+  --radius-md: 12px;
+  --shadow-soft: 0 18px 40px rgba(0,0,0,0.5);
 }
 
 html, body {
@@ -26,7 +26,7 @@ html, body {
   height: 100%;
   width: 100%;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-  background: radial-gradient(circle at top, #101630, #050712 55%);
+  background: radial-gradient(circle at top, #11152e 0, #050712 60%);
   color: var(--text-main);
 }
 
@@ -39,7 +39,6 @@ body {
 #app-root {
   width: 100%;
   max-width: 1400px;
-  margin: 0 auto;
   padding: 12px 16px 18px;
   display: flex;
   flex-direction: column;
@@ -54,14 +53,13 @@ body {
   background: radial-gradient(circle at top left, #141a36, #090b18);
   border-radius: 999px;
   border: 1px solid var(--border-soft);
-  box-shadow: 0 12px 35px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 35px rgba(0,0,0,0.55);
 }
 
 .brand-title {
   font-weight: 600;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
 }
 
 .brand-subtitle {
@@ -176,6 +174,8 @@ button:not(:disabled):active {
   box-shadow: 0 6px 18px rgba(0,0,0,0.4);
 }
 
+/* HOME */
+
 .home-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
@@ -243,8 +243,7 @@ button:not(:disabled):active {
   color: var(--accent-soft);
 }
 
-
-/* LOCAL LAYOUT */
+/* LAYOUT LOCAL */
 
 .local-layout {
   flex: 1;
@@ -272,20 +271,17 @@ button:not(:disabled):active {
   color: var(--text-muted);
 }
 
-.group h3 {
-  margin: 0 0 4px;
-  font-size: 0.85rem;
-}
-
 .group {
   background: rgba(4,6,20,0.9);
   border-radius: 12px;
   padding: 8px 9px;
   border: 1px solid rgba(255,255,255,0.04);
+  margin-bottom: 4px;
 }
 
-.group + .group {
-  margin-top: 2px;
+.group h3 {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
 }
 
 label {
@@ -379,8 +375,6 @@ select {
   min-height: 18px;
 }
 
-/* Local canvas */
-
 .local-canvas-wrap {
   background: radial-gradient(circle at top, #131a38, #050712);
   border-radius: var(--radius-md);
@@ -395,7 +389,7 @@ select {
   display: block;
 }
 
-/* ONLINE LAYOUT */
+/* ONLINE */
 
 .online-layout {
   flex: 1;

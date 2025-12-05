@@ -1,7 +1,5 @@
 const ICE_CONFIG = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-  ],
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 };
 
 export function setupVoice(state, socket, btn, statusEl, logLine) {
@@ -13,8 +11,6 @@ export function setupVoice(state, socket, btn, statusEl, logLine) {
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       statusEl.textContent = 'Micrófono: activo';
-      // Sonidito de confirmación
-      playBeep(880, 0.08);
       return localStream;
     } catch (err) {
       console.error(err);
@@ -23,32 +19,12 @@ export function setupVoice(state, socket, btn, statusEl, logLine) {
     }
   }
 
-  function playBeep(freq, duration) {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = freq;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-      osc.start();
-      osc.stop(ctx.currentTime + duration + 0.02);
-    } catch (e) {
-      /* ignorar si no se puede */
-    }
-  }
-
   function createPeerConnection(peerId) {
     const pc = new RTCPeerConnection(ICE_CONFIG);
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit('webrtc-ice-candidate', {
-          to: peerId,
-          candidate: event.candidate,
-        });
+        socket.emit('webrtc-ice-candidate', { to: peerId, candidate: event.candidate });
       }
     };
 

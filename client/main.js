@@ -29,9 +29,6 @@ document.getElementById('btn-back-home-from-online').addEventListener('click', (
   showScreen('home');
 });
 
-// Inicializar modos
 initLocalMode();
 initOnlineMode();
-
-// Permitir que el modo online actualice el label de conexión
 setConnectionLabel(document.getElementById('online-connection-label'));

@@ -86,11 +86,7 @@ export function initOnlineMode() {
       return;
     }
     const p = onlineState.players.find(pl => pl.id === onlineState.turnPlayerId);
-    if (!p) {
-      turnLabel.textContent = '';
-      return;
-    }
-    turnLabel.textContent = `Turno de: ${p.name}`;
+    turnLabel.textContent = p ? `Turno de: ${p.name}` : '';
   }
 
   btnCreate.addEventListener('click', () => {
@@ -137,7 +133,6 @@ export function initOnlineMode() {
     });
   });
 
-  // Socket events
   socket.on('connect', () => {
     logLine('Conectado al servidor.');
     if (connectionLabelEl) connectionLabelEl.textContent = 'Servidor: conectado';
@@ -223,10 +218,8 @@ export function initOnlineMode() {
     logLine(msg);
   });
 
-  // WebRTC voice
   setupVoice(onlineState, socket, btnVoice, voiceStatus, logLine);
 
-  // Señalización WebRTC
   socket.on('webrtc-offer', ({ from, offer }) => {
     window.__arcaneVoice?.onOffer(from, offer);
   });

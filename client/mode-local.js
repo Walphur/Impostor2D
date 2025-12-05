@@ -1,10 +1,10 @@
 import { drawMesa2D } from './mesa-2d.js';
 
 const state = {
-  players: [],       // { id, name, role, eliminated }
+  players: [],
   impostorCount: 1,
   round: 0,
-  phase: 'config',   // config | cartas | palabras | votacion | finronda
+  phase: 'config',
   currentTurnIndex: 0,
   currentTurnId: null,
 };
@@ -73,7 +73,6 @@ export function initLocalMode() {
       playerList.appendChild(li);
     });
 
-    // select de ver cartas
     seeSelect.innerHTML = '<option value="">-- Elegir jugador --</option>';
     state.players.forEach((p) => {
       const opt = document.createElement('option');
@@ -82,7 +81,6 @@ export function initLocalMode() {
       seeSelect.appendChild(opt);
     });
 
-    // select de votación
     voteSelect.innerHTML = '<option value="">-- ¿A quién expulsan? --</option>';
     state.players.filter(p => !p.eliminated).forEach((p) => {
       const opt = document.createElement('option');
@@ -118,7 +116,7 @@ export function initLocalMode() {
       return;
     }
     if (names.length !== nPlayers) {
-      nPlayers !== names.length && (countInput.value = String(names.length));
+      countInput.value = String(names.length);
     }
     names = names.slice(0, 15);
 
@@ -168,7 +166,7 @@ export function initLocalMode() {
   btnNextTurn.addEventListener('click', () => {
     if (state.phase !== 'palabras') return;
     const alive = state.players.filter(p => !p.eliminated);
-    if (alive.length === 0) return;
+    if (!alive.length) return;
     const order = alive.map(p => p.id);
     const idx = order.indexOf(state.currentTurnId);
     const nextIdx = (idx + 1) % order.length;
@@ -186,8 +184,9 @@ export function initLocalMode() {
     const p = state.players.find(pl => pl.id === id);
     if (!p) return;
     cardEl.classList.remove('hidden');
-    cardEl.classList.toggle('ciudadano', p.role === 'ciudadano');
-    cardText.textContent = p.role === 'impostor' ? 'IMPOSTOR 🃏' : 'CIUDADANO 🛡️';
+    const isCitizen = p.role === 'ciudadano';
+    cardEl.classList.toggle('ciudadano', isCitizen);
+    cardText.textContent = isCitizen ? 'CIUDADANO 🛡️' : 'IMPOSTOR 😈';
   });
 
   btnGoVote.addEventListener('click', () => {
@@ -213,6 +212,5 @@ export function initLocalMode() {
     syncUI();
   });
 
-  // Inicial
   resetForNewConfig();
 }
