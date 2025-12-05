@@ -1,14 +1,12 @@
 {
-  "name": "impostor-arcane-full",
+  "name": "impostor-fix",
   "version": "1.0.0",
-  "description": "Impostor Arcane – Local 2D + Online 3D con voz, listo para Render",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.8.0",
-    "uuid": "^9.0.1"
+    "socket.io": "^4.8.0"
   }
 }
