@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Impostor (Mesa Local)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at top, #020617 0, #020617 40%, #000 100%);
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #gameCanvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+    #hud {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      background: rgba(15,23,42,0.92);
+      padding: 14px 16px 12px;
+      border-radius: 16px;
+      max-width: 380px;
+      font-size: 14px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.55);
+      border: 1px solid rgba(148,163,184,0.4);
+      backdrop-filter: blur(16px);
+    }
+    #hud h2 {
+      margin: 0 0 4px 0;
+      font-size: 20px;
+      letter-spacing: 0.03em;
+    }
+    #statusLine {
+      font-size: 12px;
+      opacity: 0.85;
+      margin-bottom: 4px;
+    }
+    #timer {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #f97316;
+    }
+    #hud label {
+      display: block;
+      margin-top: 6px;
+      font-size: 13px;
+    }
+    #hud input, #hud button, #hud select {
+      width: 100%;
+      margin-top: 3px;
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(51,65,85,0.9);
+      font-size: 13px;
+      background: #020617;
+      color: #e5e7eb;
+    }
+    #hud input:focus, #hud select:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.6);
+    }
+    #hud button {
+      cursor: pointer;
+      background: linear-gradient(135deg,#38bdf8,#22c55e);
+      border: none;
+      font-weight: 600;
+      color: #0b1120;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+    }
+    #hud button:disabled {
+      background: #1f2937;
+      color: #6b7280;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+    #hud button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(34,197,94,0.45);
+      filter: brightness(1.05);
+    }
+    #playersList {
+      max-height: 110px;
+      overflow-y: auto;
+      margin-top: 4px;
+      padding-left: 18px;
+    }
+    #card {
+      margin-top: 8px;
+      font-weight: 600;
+      min-height: 24px;
+    }
+    #turnInfo {
+      margin-top: 4px;
+      font-size: 13px;
+    }
+    #voteArea {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(148,163,184,0.4);
+    }
+    #voteArea strong {
+      font-size: 13px;
+    }
+    small {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+    #banner {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    #bannerInner {
+      min-width: 320px;
+      max-width: 520px;
+      padding: 24px 28px;
+      border-radius: 24px;
+      text-align: center;
+      background: radial-gradient(circle at top,#1f2937 0,#020617 55%,#000 100%);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      border: 1px solid rgba(148,163,184,0.6);
+      pointer-events: auto;
+    }
+    #bannerTitle {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+    #bannerSubtitle {
+      font-size: 14px;
+      opacity: 0.85;
+      margin-bottom: 14px;
+    }
+    #banner button {
+      margin-top: 6px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      background: linear-gradient(135deg,#38bdf8,#22c55e);
+      color: #020617;
+    }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <h2>Impostor (Local)</h2>
+    <div id="statusLine">Ronda: 0 · Fase: configuración</div>
+    <div id="timer"></div>
+
+    <label>Cantidad de jugadores (2 a 15)</label>
+    <input id="numPlayers" type="number" min="2" max="15" value="6" />
+
+    <label>Nombres (separados por coma)</label>
+    <input id="namesInput" placeholder="Juan, Pedro, Meli..." />
+
+    <label>Cantidad de impostores (1 a 4)</label>
+    <input id="numImpostors" type="number" min="1" max="4" value="1" />
+
+    <button onclick="setupPlayers()">Cargar jugadores</button>
+    <button onclick="startLocalGame()">Repartir cartas (empezar ronda)</button>
+    <button id="nextTurnBtn" onclick="nextTurn()" disabled>Siguiente turno</button>
+
+    <h3>Jugadores</h3>
+    <ul id="playersList"></ul>
+
+    <label>Ver carta de:</label>
+    <select id="whoSelect" onchange="showCardForSelected()">
+      <option value="">-- Elegir jugador --</option>
+    </select>
+    <small>Tip: que cada uno venga solo a la pantalla a ver su carta 😉</small>
+
+    <div id="card"></div>
+    <div id="turnInfo"></div>
+
+    <div id="voteArea">
+      <strong>Votación</strong>
+      <div id="votePhaseText" style="font-size:12px; opacity:0.9; margin:2px 0 4px;">
+        Después de que todos digan una palabra se habilita la votación.
+      </div>
+      <button id="startVoteBtn" onclick="goToVoting()" disabled>Ir a votación</button>
+      <select id="voteSelect">
+        <option value="">-- ¿A quién expulsan? --</option>
+      </select>
+      <button id="confirmVoteBtn" onclick="resolveVote()" disabled>Expulsar seleccionado</button>
+      <div id="voteResult" style="margin-top:4px; font-size:13px;"></div>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="banner">
+    <div id="bannerInner">
+      <div id="bannerTitle"></div>
+      <div id="bannerSubtitle"></div>
+      <button onclick="closeBannerAndReset()">Nueva partida</button>
+    </div>
+  </div>
+
+  <script src="mesa-2d.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
