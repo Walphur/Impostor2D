@@ -229,7 +229,12 @@ select {
   background: radial-gradient(circle at top, #171f46, #050713);
   position: relative;
   overflow: hidden;
+  min-height: 260px;
 }
+.canvas-wrap-online {
+  min-height: 260px;
+}
+
 #local-canvas,
 #online-canvas { width: 100%; height: 100%; display: block; }
 

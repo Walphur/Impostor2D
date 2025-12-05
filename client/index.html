@@ -23,7 +23,7 @@
       <h1>Elegí cómo jugar</h1>
       <p>Un juego de impostores y palabras. Podés jugar todos en la misma pantalla o crear una sala online.</p>
       <div class="home-buttons mode-toggle">
-        <button id="btn-home-local" class="btn btn-primary btn-mode-active">Modo Local (2D)</button>
+        <button id="btn-home-local" class="btn btn-secondary btn-mode-active">Modo Local (2D)</button>
         <button id="btn-home-online" class="btn btn-secondary">Modo Online</button>
       </div>
       <p class="tip">Tip: para el modo local, conectá la compu a la tele como si fuera una consola.</p>
@@ -135,6 +135,7 @@
           <p id="online-turn"></p>
           <p id="online-timer" class="timer-text"></p>
           <button id="online-btn-start" class="btn btn-success btn-full" disabled>Iniciar partida (host)</button>
+          <button id="online-btn-spoke" class="btn btn-secondary btn-full" disabled>Ya dije mi palabra</button>
         </div>
 
         <div class="group">
@@ -148,7 +149,6 @@
           <h3>Votación</h3>
           <p id="online-vote-info" class="tip">Aún no se está votando.</p>
           <div id="online-vote-area"></div>
-          <button id="online-btn-callvote" class="btn btn-secondary btn-full" disabled>Llamar a votación (host)</button>
         </div>
       </aside>
 

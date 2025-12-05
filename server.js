@@ -142,17 +142,11 @@ io.on('connection', (socket)=>{
     cb && cb({ ok:true });
   });
 
-  // Avanza turno desde el host; al terminar primera ronda inicia votación automática
-  socket.on('advanceTurn', ()=>{
-    const code = socket.data.roomCode;
-    const room = rooms[code];
-    if (!room || room.phase !== 'palabras') return;
-    if (room.hostId !== playerId) return;
-
+  // Lógica común para pasar al siguiente turno o iniciar votación
+  function advanceOrVote(room){
     const players = room.players;
     if (!players.length) return;
 
-    room.spoken = room.spoken || {};
     const current = players[room.turnIndex];
     if (current){
       room.spoken[current.id] = true;
@@ -160,38 +154,37 @@ io.on('connection', (socket)=>{
 
     const allSpoken = players.length > 0 && players.every(p => room.spoken[p.id]);
     if (allSpoken){
-      // Pasamos a votación automática
       room.phase = 'votacion';
       room.votes = {};
-      io.to(code).emit('votingStarted', { players });
-      io.to(code).emit('log','Todos hablaron. Comienza la votación.');
+      io.to(room.code).emit('votingStarted', { players });
+      io.to(room.code).emit('log','Todos hablaron. Comienza la votación.');
       emitRoomState(room);
       return;
     }
 
-    // Avanza al siguiente
     room.turnIndex = (room.turnIndex + 1) % players.length;
     emitRoomState(room);
-  });
+  }
 
-  socket.on('startVoting', (_, cb)=>{
+  // Cuando el jugador de turno toca "Ya dije mi palabra"
+  socket.on('playerSpoke', ()=>{
     const code = socket.data.roomCode;
     const room = rooms[code];
-    if (!room){
-      cb && cb({ ok:false, error:'Sala inexistente.' });
-      return;
-    }
-    if (room.hostId !== playerId){
-      cb && cb({ ok:false, error:'Solo el host puede llamar a votación.' });
-      return;
-    }
-    const players = room.players;
-    room.phase = 'votacion';
-    room.votes = {};
-    io.to(code).emit('votingStarted', { players });
-    io.to(code).emit('log', 'Comienza la votación (manual).');
-    emitRoomState(room);
-    cb && cb({ ok:true });
+    if (!room || room.phase !== 'palabras') return;
+
+    const current = room.players[room.turnIndex];
+    if (!current || current.id !== playerId) return; // solo el jugador actual
+
+    advanceOrVote(room);
+  });
+
+  // Cuando se acaba el tiempo, el host fuerza el avance
+  socket.on('advanceTurnTimeout', ()=>{
+    const code = socket.data.roomCode;
+    const room = rooms[code];
+    if (!room || room.phase !== 'palabras') return;
+    if (room.hostId !== playerId) return;
+    advanceOrVote(room);
   });
 
   socket.on('castVote', ({ targetId })=>{

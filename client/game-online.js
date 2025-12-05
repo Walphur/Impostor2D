@@ -9,11 +9,11 @@
   const turnEl = document.getElementById('online-turn');
   const timerEl = document.getElementById('online-timer');
   const btnStart = document.getElementById('online-btn-start');
+  const btnSpoke = document.getElementById('online-btn-spoke');
   const cardEl = document.getElementById('online-card');
   const cardText = document.getElementById('online-card-text');
   const voteInfo = document.getElementById('online-vote-info');
   const voteArea = document.getElementById('online-vote-area');
-  const btnCallVote = document.getElementById('online-btn-callvote');
   const logBox = document.getElementById('online-log');
   const canvas = document.getElementById('online-canvas');
   const ctx = canvas.getContext('2d');
@@ -88,7 +88,10 @@
     }
 
     btnStart.disabled = !(isHost() && state.players.length>=3 && ph==='lobby');
-    btnCallVote.disabled = !(isHost() && ph==='palabras');
+
+    // botón "Ya dije mi palabra": sólo activo si es tu turno y estamos en ronda
+    const isYourTurn = (state.playerId && state.playerId === state.turnPlayerId && ph==='palabras');
+    btnSpoke.disabled = !isYourTurn;
   }
 
   function refreshRole(){
@@ -102,11 +105,11 @@
   }
 
   function updateTimerLabel(){
-    if (state.phase !== 'palabras'){
+    if (state.phase !== 'palabras' || !state.turnPlayerId){
       timerEl.textContent = '';
       return;
     }
-    timerEl.textContent = 'Tiempo para palabra: ' + timerSeconds + ' s';
+    timerEl.textContent = 'Tiempo máximo: ' + timerSeconds + ' s';
   }
 
   function stopTimer(){
@@ -121,15 +124,15 @@
   function startTurnTimer(){
     stopTimer();
     if (state.phase !== 'palabras' || !state.turnPlayerId) return;
-    timerSeconds = 20;
+    timerSeconds = 10;
     updateTimerLabel();
     timerInterval = setInterval(()=>{
       timerSeconds--;
       if (timerSeconds <= 0){
         stopTimer();
-        // el host avanza el turno; para los demás solo se queda en cero
+        // El host fuerza el avance si el jugador no tocó "Ya dije mi palabra"
         if (isHost()){
-          state.socket.emit('advanceTurn');
+          state.socket.emit('advanceTurnTimeout');
         }
       } else {
         updateTimerLabel();
@@ -140,8 +143,10 @@
   function resizeCanvas(){
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
+    const w = rect.width || 600;
+    const h = rect.height || 260;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
     ctx.setTransform(dpr,0,0,dpr,0,0);
     drawTable();
   }
@@ -164,7 +169,6 @@
     ctx.fillStyle = grad;
     ctx.fillRect(0,0,w,h);
 
-    // mesa (elipse)
     ctx.save();
     ctx.translate(cx,cy);
     ctx.scale(1, ry/rx);
@@ -177,7 +181,6 @@
     ctx.stroke();
     ctx.restore();
 
-    // línea centro
     ctx.save();
     ctx.translate(cx,cy);
     ctx.scale(1, ry/rx);
@@ -190,14 +193,14 @@
 
     if (!state.players.length) return;
 
-    const base = Math.PI; // frente a la cámara
+    const base = Math.PI;
     const step = Math.PI*2/state.players.length;
 
     state.players.forEach((p,i)=>{
       const angle = base + i*step;
       const pr = rx*1.15;
       const px = cx + Math.cos(angle)*pr;
-      const py = cy + Math.sin(angle)*ry*1.1; // elipse proyectada
+      const py = cy + Math.sin(angle)*ry*1.1;
 
       const isTurn = state.turnPlayerId === p.id;
       if (isTurn){
@@ -351,12 +354,9 @@
     });
   });
 
-  btnCallVote.addEventListener('click', ()=>{
-    socket.emit('startVoting', {}, (res)=>{
-      if (!res || !res.ok){
-        alert(res && res.error || 'No se pudo iniciar la votación.');
-      }
-    });
+  btnSpoke.addEventListener('click', ()=>{
+    // Solo debería estar activo si es tu turno
+    socket.emit('playerSpoke');
   });
 
   resizeCanvas();

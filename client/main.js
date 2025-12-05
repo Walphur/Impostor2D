@@ -17,6 +17,7 @@
   }
 
   function setModeActive(mode){
+    // 'local' | 'online'
     btnLocal.classList.toggle('btn-mode-active', mode === 'local');
     btnOnline.classList.toggle('btn-mode-active', mode === 'online');
   }
@@ -33,7 +34,7 @@
 
   btnBackLocal.addEventListener('click', ()=>{
     show(screenHome);
-    setModeActive('local');
+    setModeActive('local'); // volvemos a destacar el local por defecto
   });
 
   btnBackOnline.addEventListener('click', ()=>{
