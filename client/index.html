@@ -2,19 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Impostor Arcane – Mesa Online</title>
+  <title>Impostor Arcane - Mesa Online</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
-      --bg: #050816;
-      --card: #0b1020;
-      --card-soft: #111827;
+      --bg: #030712;
+      --card: #020617;
       --accent: #f97316;
-      --accent-strong: #fb3b78;
+      --accent2: #22c55e;
+      --danger: #f97373;
       --text: #f9fafb;
       --muted: #9ca3af;
-      --danger: #f97373;
-      --success: #22c55e;
+      --border: rgba(148,163,184,0.35);
     }
     * {
       box-sizing: border-box;
@@ -42,112 +41,156 @@
     header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
       gap: 12px;
-    }
-    .title-block {
-      display: flex;
-      gap: 10px;
       align-items: center;
+    }
+    .title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .status-dot {
       width: 10px;
       height: 10px;
       border-radius: 999px;
-      background: var(--success);
-      box-shadow: 0 0 10px rgba(34,197,94,0.9);
+      background: #22c55e;
+      box-shadow: 0 0 12px rgba(34,197,94,0.8);
     }
     .title {
       font-size: 1.4rem;
       font-weight: 700;
-      letter-spacing: .18em;
+      letter-spacing: .08em;
       text-transform: uppercase;
     }
-    .subtitle {
+    .badge {
+      font-size: .65rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
+      background: rgba(15,23,42,0.9);
+    }
+    #headerSubtitle {
       font-size: .8rem;
       color: var(--muted);
     }
     main {
       display: grid;
-      grid-template-columns: minmax(0,2.1fr) minmax(0,1.2fr);
+      grid-template-columns: minmax(0,2.1fr) minmax(0,1.1fr);
       gap: 16px;
+      filter: blur(0);
+      transition: filter .2s ease, opacity .2s ease;
     }
-    @media (max-width: 880px) {
-      main { grid-template-columns: 1fr; }
+    main.blurred {
+      filter: blur(3px);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
     }
     .card {
-      background: radial-gradient(circle at top, #0b1120, #020617);
+      background: radial-gradient(circle at top, #020617, #000);
       border-radius: 20px;
       padding: 14px;
-      border: 1px solid rgba(148,163,184,0.25);
-      box-shadow: 0 22px 60px rgba(15,23,42,0.9);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 40px rgba(15,23,42,0.9);
       position: relative;
       overflow: hidden;
-    }
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: -40%;
-      background:
-        radial-gradient(circle at 0 0, rgba(249,115,22,0.16), transparent 55%),
-        radial-gradient(circle at 100% 0, rgba(59,130,246,0.18), transparent 55%);
-      opacity: .6;
-      pointer-events: none;
     }
     .card-inner {
       position: relative;
       z-index: 1;
     }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -60%;
+      background:
+        radial-gradient(circle at 20% 0, rgba(249,115,22,0.18), transparent 55%),
+        radial-gradient(circle at 80% 10%, rgba(56,189,248,0.14), transparent 55%);
+      opacity: .6;
+      pointer-events: none;
+    }
 
-    /* Mesa con imagen */
     .mesa-wrapper {
-      border-radius: 20px;
-      overflow: hidden;
-      background: #020617;
-      border: 1px solid rgba(148,163,184,0.35);
       position: relative;
-      min-height: 320px;
+      height: 330px;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
     }
     .mesa-img {
-      width: 100%;
-      max-width: 720px;
+      max-width: 100%;
+      max-height: 100%;
       display: block;
+      filter: drop-shadow(0 18px 40px rgba(15,23,42,0.9));
     }
-    .mesa-overlay-card {
+    .mesa-label {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%,-40%);
-      background: radial-gradient(circle at 0 0, #f97316, #9f1239);
-      padding: 10px 16px;
-      border-radius: 16px;
-      box-shadow:
-        0 14px 36px rgba(15,23,42,0.95),
-        0 0 0 1px rgba(15,23,42,0.9),
-        0 0 18px rgba(248,250,252,0.45);
-      text-align: center;
-      text-transform: uppercase;
-      letter-spacing: .16em;
-      font-size: .65rem;
-      color: #0f172a;
-    }
-    .mesa-word {
-      margin-top: 6px;
+      top: 16px;
+      left: 18px;
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(248,250,252,0.9);
-      color: #0f172a;
-      font-size: .85rem;
-      letter-spacing: .12em;
-    }
-    .mesa-role {
-      margin-top: 4px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid var(--border);
       font-size: .65rem;
-      letter-spacing: .12em;
-      color: rgba(15,23,42,0.8);
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mesa-label-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(249,115,22,0.9);
+    }
+    .card-center {
+      position: absolute;
+      top: 46%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle at 0 0, #f97316, #7f1d1d);
+      border-radius: 18px;
+      padding: 10px 18px;
+      min-width: 130px;
+      text-align: center;
+      box-shadow:
+        0 14px 30px rgba(15,23,42,0.95),
+        0 0 0 1px rgba(15,23,42,0.9);
+      color: #111827;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      font-size: .65rem;
+    }
+    .card-center .word {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 3px 12px;
+      border-radius: 999px;
+      background: rgba(248,250,252,0.9);
+      font-size: .85rem;
+      letter-spacing: .1em;
+    }
+    .card-center small {
+      display: block;
+      margin-top: 4px;
+      font-size: .6rem;
+      color: rgba(15,23,42,0.9);
+      letter-spacing: .08em;
     }
 
     .hud {
@@ -159,48 +202,48 @@
       justify-content: space-between;
       font-size: .8rem;
     }
-    .chip {
-      padding: 3px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.4);
-      font-size: .7rem;
-      text-transform: uppercase;
-      letter-spacing: .16em;
-      color: var(--muted);
-    }
-    .timer {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .pill {
       padding: 4px 10px;
       border-radius: 999px;
-      background: rgba(15,23,42,0.85);
-      border: 1px solid rgba(148,163,184,0.35);
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    .timer-label {
-      font-size: .7rem;
+    .pill-label {
+      font-size: .68rem;
       text-transform: uppercase;
-      letter-spacing: .16em;
+      letter-spacing: .14em;
       color: var(--muted);
     }
-    .timer-value {
+    .pill-value {
       font-variant-numeric: tabular-nums;
       font-weight: 600;
     }
     .phase-pill {
-      padding: 4px 10px;
+      padding: 3px 10px;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.35);
+      border: 1px solid var(--border);
       background: rgba(15,23,42,0.9);
       font-size: .7rem;
       text-transform: uppercase;
-      letter-spacing: .18em;
+      letter-spacing: .16em;
       color: var(--muted);
     }
     .phase-pill.vote {
       border-color: rgba(248,113,113,0.8);
       background: rgba(127,29,29,0.9);
       color: #fecaca;
+    }
+    .chip {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
     }
 
     .controls {
@@ -210,29 +253,28 @@
       gap: 8px;
     }
     button {
-      border: none;
       border-radius: 999px;
+      border: 1px solid var(--border);
       padding: 7px 14px;
       font-size: .8rem;
-      cursor: pointer;
-      background: rgba(15,23,42,0.98);
+      background: rgba(15,23,42,0.96);
       color: var(--text);
-      border: 1px solid rgba(148,163,184,0.45);
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all .16s ease;
+      cursor: pointer;
+      transition: all .14s ease;
     }
     button.primary {
-      background: radial-gradient(circle at 0 0, #22c55e, #16a34a);
+      background: radial-gradient(circle at 0 0, var(--accent2), #16a34a);
+      border-color: rgba(34,197,94,0.9);
       color: #022c22;
-      border-color: rgba(74,222,128,0.9);
-      box-shadow: 0 0 18px rgba(22,163,74,0.75);
       font-weight: 600;
+      box-shadow: 0 0 16px rgba(34,197,94,0.7);
     }
-    button.danger {
-      background: radial-gradient(circle at 0 0, #fb7185, #b91c1c);
-      border-color: rgba(248,113,113,0.9);
+    button.skip {
+      border-style: dashed;
+      opacity: .9;
     }
     button:disabled {
       opacity: .35;
@@ -245,15 +287,15 @@
     }
 
     .voice-panel {
-      margin-top: 8px;
+      margin-top: 10px;
       padding: 8px;
       border-radius: 14px;
-      background: rgba(15,23,42,0.95);
-      border: 1px dashed rgba(148,163,184,0.45);
+      border: 1px dashed var(--border);
+      background: rgba(15,23,42,0.96);
+      font-size: .8rem;
       display: flex;
       flex-direction: column;
       gap: 6px;
-      font-size: .8rem;
     }
     .voice-row {
       display: flex;
@@ -276,76 +318,75 @@
       background: #6b7280;
     }
     .voice-dot.active {
-      background: var(--success);
+      background: #22c55e;
       box-shadow: 0 0 10px rgba(34,197,94,0.9);
     }
     .voice-level {
       flex: 1;
       height: 6px;
       border-radius: 999px;
-      background: rgba(30,41,59,0.9);
+      background: rgba(31,41,55,0.95);
       overflow: hidden;
     }
     .voice-level-inner {
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg,#22c55e,#facc15,#fb923c);
-      transition: width .12s linear;
+      transition: width .1s linear;
     }
     .voice-tip {
-      font-size: .72rem;
+      font-size: .7rem;
       color: var(--muted);
     }
 
-    /* Sidebar */
     .sidebar-section {
       margin-bottom: 14px;
     }
     .sidebar-section h3 {
-      font-size: .75rem;
+      font-size: .78rem;
       text-transform: uppercase;
-      letter-spacing: .2em;
+      letter-spacing: .18em;
       color: var(--muted);
       margin-bottom: 6px;
     }
     .players-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
+      grid-template-columns: repeat(auto-fill,minmax(130px,1fr));
       gap: 6px;
       font-size: .8rem;
     }
     .player-item {
       padding: 6px 8px;
       border-radius: 12px;
-      background: rgba(15,23,42,0.9);
-      border: 1px solid rgba(148,163,184,0.4);
+      background: rgba(15,23,42,0.96);
+      border: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
-      align-items: center;
       gap: 6px;
+      align-items: center;
     }
-    .player-item-main {
-      display: flex;
-      flex-direction: column;
+    .player-item.me {
+      border-color: var(--accent2);
+      box-shadow: 0 0 12px rgba(34,197,94,0.5);
     }
-    .player-name {
+    .player-item .name {
       font-weight: 500;
     }
-    .player-sub {
+    .player-item .sub {
       font-size: .65rem;
       text-transform: uppercase;
-      letter-spacing: .16em;
+      letter-spacing: .14em;
       color: var(--muted);
     }
     .log {
       max-height: 170px;
       overflow-y: auto;
       padding-right: 4px;
+      font-size: .78rem;
     }
     .log-line {
-      font-size: .78rem;
-      color: var(--muted);
       margin-bottom: 3px;
+      color: var(--muted);
       display: flex;
       gap: 6px;
       align-items: baseline;
@@ -353,11 +394,11 @@
     .log-tag {
       font-size: .65rem;
       text-transform: uppercase;
-      letter-spacing: .18em;
+      letter-spacing: .16em;
       color: rgba(148,163,184,0.9);
     }
 
-    /* Lobby */
+    /* Lobby overlay */
     .lobby-overlay {
       position: absolute;
       inset: 0;
@@ -365,16 +406,15 @@
       align-items: center;
       justify-content: center;
       z-index: 10;
-      backdrop-filter: blur(4px);
     }
     .lobby-panel {
       width: 100%;
-      max-width: 540px;
-      border-radius: 22px;
+      max-width: 520px;
+      background: radial-gradient(circle at top, #020617, #000);
+      border-radius: 20px;
       padding: 18px;
-      background: radial-gradient(circle at top, #020617, #020617 45%, #000 100%);
-      border: 1px solid rgba(148,163,184,0.45);
-      box-shadow: 0 24px 80px rgba(15,23,42,0.95);
+      border: 1px solid var(--border);
+      box-shadow: 0 22px 70px rgba(15,23,42,0.95);
     }
     .lobby-header {
       display: flex;
@@ -382,27 +422,27 @@
       align-items: center;
       margin-bottom: 12px;
     }
-    .lobby-title {
-      font-size: 1rem;
+    .lobby-header h2 {
+      font-size: .9rem;
       text-transform: uppercase;
       letter-spacing: .18em;
     }
     .lobby-tabs {
       display: inline-flex;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.4);
+      border: 1px solid var(--border);
       overflow: hidden;
+      font-size: .75rem;
     }
     .lobby-tab {
       padding: 5px 10px;
-      font-size: .75rem;
-      background: transparent;
       border: none;
+      background: transparent;
       color: var(--muted);
-      cursor: pointer;
       text-transform: uppercase;
       letter-spacing: .16em;
-      border-right: 1px solid rgba(148,163,184,0.35);
+      cursor: pointer;
+      border-right: 1px solid rgba(148,163,184,0.4);
     }
     .lobby-tab:last-child {
       border-right: none;
@@ -411,12 +451,17 @@
       background: rgba(34,197,94,0.16);
       color: #bbf7d0;
     }
+    .lobby-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: .8rem;
+    }
     .field {
       display: flex;
       flex-direction: column;
       gap: 3px;
-      margin-bottom: 8px;
-      font-size: .8rem;
     }
     .field label {
       font-size: .72rem;
@@ -424,75 +469,60 @@
       text-transform: uppercase;
       letter-spacing: .14em;
     }
-    .field input,
-    .field select {
+    .field input[type="text"],
+    .field input[type="number"] {
       padding: 6px 8px;
       border-radius: 10px;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: rgba(15,23,42,0.95);
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,0.96);
       color: var(--text);
       font-size: .8rem;
     }
-    .lobby-grid {
-      display: grid;
-      grid-template-columns: repeat(2,minmax(0,1fr));
-      gap: 10px;
-      margin-bottom: 8px;
-    }
     .lobby-footer {
       margin-top: 8px;
+      font-size: .75rem;
+      color: var(--muted);
       display: flex;
       justify-content: space-between;
+      gap: 8px;
       align-items: center;
-      gap: 10px;
-      font-size: .75rem;
-      color: var(--muted);
     }
-    .room-code {
+    .code-pill {
       font-variant-numeric: tabular-nums;
-      letter-spacing: .16em;
+      letter-spacing: .18em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
     }
-    .my-player {
+
+    .myplayer-select {
+      margin-top: 2px;
       font-size: .75rem;
       color: var(--muted);
-      margin-top: 4px;
-    }
-    .my-player select {
-      margin-left: 6px;
-      padding: 4px 6px;
-      border-radius: 8px;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: rgba(15,23,42,0.95);
-      color: var(--text);
-      font-size: .75rem;
     }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <div>
-        <div class="title-block">
+      <div class="title-wrap">
+        <div class="title-row">
           <div class="status-dot"></div>
           <div>
-            <div class="title">IMPOSTOR ARCANE</div>
-            <div class="subtitle" id="subtitle">
-              Configurá jugadores y creá la sala para empezar la partida.
-            </div>
+            <div class="title">Impostor Arcane <span class="badge">Mesa online</span></div>
+            <div id="headerSubtitle">Creá una sala o unite con código para empezar.</div>
           </div>
         </div>
+        <div class="myplayer-select" id="myInfo">No conectado a ninguna sala.</div>
       </div>
-      <div class="my-player" id="myPlayerBox">
-        Este dispositivo juega como:
-        <span id="myPlayerName">sin asignar</span>
-      </div>
+      <div></div>
     </header>
 
-    <!-- Lobby -->
-    <div class="lobby-overlay" id="lobby">
+    <!-- LOBBY -->
+    <div class="lobby-overlay" id="lobbyOverlay">
       <div class="lobby-panel">
         <div class="lobby-header">
-          <div class="lobby-title">Configurar partida</div>
+          <h2>Configurar partida</h2>
           <div class="lobby-tabs">
             <button class="lobby-tab active" id="tabCreate">Crear sala</button>
             <button class="lobby-tab" id="tabJoin">Unirse</button>
@@ -506,23 +536,20 @@
               <input id="hostName" type="text" placeholder="Meli" />
             </div>
             <div class="field">
-              <label for="maxPlayers">Jugadores</label>
+              <label for="maxPlayers">Jugadores máx.</label>
               <input id="maxPlayers" type="number" min="3" max="15" value="10" />
             </div>
-          </div>
-          <div class="field">
-            <label for="impostors">Impostores</label>
-            <input id="impostors" type="number" min="1" max="4" value="3" />
+            <div class="field">
+              <label for="impostors">Impostores</label>
+              <input id="impostors" type="number" min="1" max="4" value="3" />
+            </div>
           </div>
           <div class="controls" style="justify-content:flex-end; margin-top:4px;">
-            <button id="btnCreate" class="primary">Crear sala</button>
+            <button id="btnCreateRoom" class="primary">Crear sala</button>
           </div>
           <div class="lobby-footer">
-            <div>
-              Esta versión funciona como demo en <strong>un solo dispositivo</strong>.
-              Más adelante se conecta online para que cada uno entre desde su celu.
-            </div>
-            <div class="room-code" id="roomCode">ARC-000</div>
+            <span>Compartí el código con tus amigos para que se unan desde su celu.</span>
+            <span class="code-pill" id="createCodeHint">ARC-0000</span>
           </div>
         </div>
 
@@ -530,77 +557,76 @@
           <div class="lobby-grid">
             <div class="field">
               <label for="joinName">Tu nombre</label>
-              <input id="joinName" type="text" placeholder="Invitado" />
+              <input id="joinName" type="text" placeholder="Juan" />
             </div>
             <div class="field">
               <label for="joinCode">Código de sala</label>
-              <input id="joinCode" type="text" placeholder="ARC-123" />
+              <input id="joinCode" type="text" placeholder="ARC-XXXX" />
             </div>
           </div>
-          <div class="controls" style="justify-content:flex-end;">
-            <button id="btnJoin" class="primary">Unirse</button>
+          <div class="controls" style="justify-content:flex-end; margin-top:4px;">
+            <button id="btnJoinRoom" class="primary">Unirse</button>
           </div>
           <div class="lobby-footer">
-            <div>
-              En la versión online real, cada jugador entraría con su código.
-              Por ahora, todo se simula en esta misma pantalla.
-            </div>
+            <span>Entrá con el código que te pase el anfitrión.</span>
+            <span class="code-pill" id="joinCodeHint">---</span>
           </div>
         </div>
       </div>
     </div>
 
-    <main>
+    <main id="mainContent" class="blurred">
       <section class="card">
         <div class="card-inner">
           <div class="mesa-wrapper">
-            <img src="mesa-impostor.png" alt="Mesa de impostores" class="mesa-img" />
-            <div class="mesa-overlay-card">
+            <img src="mesa-impostor.png" alt="Mesa impostor" class="mesa-img" />
+            <div class="mesa-label">
+              <div class="mesa-label-dot"></div>
+              <span id="mesaLabelText">Esperando sala...</span>
+            </div>
+            <div class="card-center">
               CARTA
-              <div class="mesa-word" id="wordDisplay">----</div>
-              <div class="mesa-role" id="roleDisplay">
-                Elegí tu nombre para ver tu carta.
-              </div>
+              <div class="word" id="wordDisplay">----</div>
+              <small id="roleDisplay">Creá sala o unite para ver tu carta.</small>
             </div>
           </div>
-
           <div class="hud">
-            <div class="timer">
-              <span class="timer-label">Turno</span>
-              <span class="timer-value" id="turnTimer">00:10</span>
+            <div class="pill">
+              <span class="pill-label">Turno</span>
+              <span class="pill-value" id="turnTimer">00:10</span>
             </div>
-            <div class="timer">
-              <span class="timer-label">Votación</span>
-              <span class="timer-value" id="voteTimer">03:00</span>
+            <div class="pill">
+              <span class="pill-label">Votación</span>
+              <span class="pill-value" id="voteTimer">03:00</span>
             </div>
-            <div class="phase-pill" id="phasePill">Fase: Esperando</div>
-            <div class="chip" id="chipConfig">Sala sin configurar</div>
+            <div class="phase-pill" id="phasePill">Fase: Lobby</div>
+            <div class="chip" id="configChip">Sin sala configurada.</div>
           </div>
-
           <div class="controls">
-            <button id="btnStart" class="primary" disabled>▶ Iniciar ronda</button>
-            <button id="btnSkipVote" disabled>⏭ Nadie / Saltar voto</button>
+            <button id="btnStartRound" class="primary" disabled>▶ Iniciar ronda</button>
+            <button id="btnSkipVote" class="skip" disabled>⏭ Nadie / Saltar voto</button>
           </div>
 
           <div class="voice-panel">
             <div class="voice-row">
               <div class="voice-status">
                 <div class="voice-dot" id="voiceDot"></div>
-                <span id="voiceStatus">Micrófono en silencio</span>
+                <span id="voiceStatusText">Micrófono en silencio</span>
               </div>
-              <button id="btnMic">🎙️ Decir palabra</button>
+              <button id="btnToggleMic">🎙️ Decir palabra</button>
             </div>
             <div class="voice-row">
               <div class="voice-level">
-                <div class="voice-level-inner" id="voiceLevel"></div>
+                <div class="voice-level-inner" id="voiceLevelInner"></div>
               </div>
-              <span id="voiceHint" style="font-size:.72rem; color:var(--muted);">
-                Activá el micrófono sólo cuando sea tu turno.
+              <span style="font-size:.7rem; color:var(--muted);" id="voiceHint">
+                El micrófono solo sirve para ver el nivel de voz en tu dispositivo, no se transmite a los demás.
               </span>
             </div>
             <div class="voice-tip">
-              Cada jugador tiene <strong>10 s</strong> para decir una palabra.
-              Después de que hablen todos, se abre votación por <strong>3 minutos</strong>.
+              Cada jugador tiene 10&nbsp;s para decir <strong>una palabra</strong>. Cuando todos hablaron,
+              se abre automáticamente la votación por <strong>3 minutos</strong>. Podés elegir
+              <em>Nadie</em> para saltar voto.
             </div>
           </div>
         </div>
@@ -613,7 +639,7 @@
             <div class="players-list" id="playersList"></div>
           </div>
           <div class="sidebar-section">
-            <h3>Registro de la ronda</h3>
+            <h3>Registro</h3>
             <div class="log" id="log"></div>
           </div>
         </div>
@@ -621,10 +647,40 @@
     </main>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    // ---- Estado básico (demo local, un solo dispositivo) ----
-    const subtitle = document.getElementById('subtitle');
-    const lobby = document.getElementById('lobby');
+    const socket = io();
+
+    let myId = null;
+    let myName = '';
+    let myRole = null; // 'ciudadano' | 'impostor'
+    let myWord = null;
+    let roomCode = null;
+    let isHost = false;
+
+    let players = [];
+    let phase = 'lobby';
+    let turnIndex = 0;
+
+    let turnTimerSeconds = 10;
+    let turnTimerInterval = null;
+    let voteTimerSeconds = 180;
+    let voteTimerInterval = null;
+
+    let localHasVoted = false;
+
+    // Voice
+    let audioContext = null;
+    let analyser = null;
+    let micStream = null;
+    let voiceAnimationId = null;
+    let micOn = false;
+
+    const headerSubtitle = document.getElementById('headerSubtitle');
+    const myInfo = document.getElementById('myInfo');
+    const mainContent = document.getElementById('mainContent');
+    const lobbyOverlay = document.getElementById('lobbyOverlay');
+
     const tabCreate = document.getElementById('tabCreate');
     const tabJoin = document.getElementById('tabJoin');
     const panelCreate = document.getElementById('panelCreate');
@@ -632,259 +688,189 @@
     const hostNameInput = document.getElementById('hostName');
     const maxPlayersInput = document.getElementById('maxPlayers');
     const impostorsInput = document.getElementById('impostors');
-    const roomCodeEl = document.getElementById('roomCode');
-    const btnCreate = document.getElementById('btnCreate');
+    const btnCreateRoom = document.getElementById('btnCreateRoom');
+    const createCodeHint = document.getElementById('createCodeHint');
     const joinNameInput = document.getElementById('joinName');
     const joinCodeInput = document.getElementById('joinCode');
-    const btnJoin = document.getElementById('btnJoin');
+    const joinCodeHint = document.getElementById('joinCodeHint');
+    const btnJoinRoom = document.getElementById('btnJoinRoom');
 
-    const myPlayerBox = document.getElementById('myPlayerBox');
-    const myPlayerNameEl = document.getElementById('myPlayerName');
-
+    const mesaLabelText = document.getElementById('mesaLabelText');
     const wordDisplay = document.getElementById('wordDisplay');
     const roleDisplay = document.getElementById('roleDisplay');
     const turnTimerEl = document.getElementById('turnTimer');
     const voteTimerEl = document.getElementById('voteTimer');
     const phasePill = document.getElementById('phasePill');
-    const chipConfig = document.getElementById('chipConfig');
+    const configChip = document.getElementById('configChip');
     const playersListEl = document.getElementById('playersList');
     const logEl = document.getElementById('log');
-    const btnStart = document.getElementById('btnStart');
+    const btnStartRound = document.getElementById('btnStartRound');
     const btnSkipVote = document.getElementById('btnSkipVote');
 
-    const btnMic = document.getElementById('btnMic');
+    const btnToggleMic = document.getElementById('btnToggleMic');
     const voiceDot = document.getElementById('voiceDot');
-    const voiceStatus = document.getElementById('voiceStatus');
-    const voiceLevel = document.getElementById('voiceLevel');
+    const voiceStatusText = document.getElementById('voiceStatusText');
     const voiceHint = document.getElementById('voiceHint');
-
-    let roomCode = '';
-    let maxPlayers = 0;
-    let impostors = 0;
-    let players = []; // {id,name,impostor,hasSpoken,votes}
-    let myId = null;
-    let currentTurn = 0;
-    let phase = 'esperando';
-    let turnSeconds = 10;
-    let voteSeconds = 180;
-    let turnInterval = null;
-    let voteInterval = null;
-    let localVotesDone = 0;
-    let localHasVoted = false;
-
-    const WORDS = [
-      'GALAXIA','MISTERIO','AVENTURA','DESIERTO','OCÉANO','LABERINTO','TRAVESÍA',
-      'MONTAÑA','ISLA','INVESTIGACIÓN','SECRETO','FESTIVAL','HOSPITAL','CIUDAD',
-      'MUSEO','TORMENTA','PUEBLO','TEATRO','MERCADO','PLANETA','CIRCO','CASTILLO',
-      'RECUERDO','NOCHE','VERANO','INVIERNO','CARRERA','MISIÓN','EXPEDICIÓN'
-    ];
-    let secretWord = '---';
+    const voiceLevelInner = document.getElementById('voiceLevelInner');
 
     function log(tag, text) {
       const line = document.createElement('div');
       line.className = 'log-line';
-      const t = document.createElement('span');
-      t.className = 'log-tag';
-      t.textContent = tag;
-      const msg = document.createElement('span');
-      msg.textContent = text;
-      line.appendChild(t);
-      line.appendChild(msg);
+      const t1 = document.createElement('span');
+      t1.className = 'log-tag';
+      t1.textContent = tag;
+      const t2 = document.createElement('span');
+      t2.textContent = text;
+      line.appendChild(t1);
+      line.appendChild(t2);
       logEl.appendChild(line);
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function randomRoomCode() {
-      const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-      let code = '';
-      for (let i = 0; i < 3; i++) {
-        code += chars[Math.floor(Math.random() * chars.length)];
-      }
-      return 'ARC-' + code;
-    }
-
-    function assignRoles() {
-      const indices = [...Array(players.length).keys()];
-      // elegir impostores
-      let remaining = impostors;
-      while (remaining > 0 && indices.length) {
-        const idx = Math.floor(Math.random() * indices.length);
-        const pIndex = indices.splice(idx,1)[0];
-        players[pIndex].impostor = true;
-        remaining--;
-      }
-      // palabra clave
-      secretWord = WORDS[Math.floor(Math.random() * WORDS.length)];
-    }
-
-    function updateMyCard() {
-      if (myId == null) {
-        wordDisplay.textContent = '----';
-        roleDisplay.textContent = 'Elegí tu nombre para ver tu carta.';
-        return;
-      }
-      const me = players.find(p => p.id === myId);
-      if (!me) return;
-      if (me.impostor) {
-        wordDisplay.textContent = 'IMPOSTOR';
-        roleDisplay.textContent = 'No reveles tu rol. Mezclate con el resto.';
-      } else {
-        wordDisplay.textContent = secretWord;
-        roleDisplay.textContent = 'Decí algo relacionado sin decir la palabra exacta.';
-      }
-    }
-
-    function renderPlayers() {
-      playersListEl.innerHTML = '';
-      players.forEach((p, index) => {
-        const item = document.createElement('div');
-        item.className = 'player-item';
-        const main = document.createElement('div');
-        main.className = 'player-item-main';
-        const nameEl = document.createElement('span');
-        nameEl.className = 'player-name';
-        nameEl.textContent = p.name;
-        const sub = document.createElement('span');
-        sub.className = 'player-sub';
-        if (phase === 'votacion') {
-          sub.textContent = 'Jugador en votación';
-        } else if (phase === 'palabras' && index === currentTurn) {
-          sub.textContent = 'Hablando…';
-        } else if (phase === 'palabras' && p.hasSpoken) {
-          sub.textContent = 'Ya habló';
-        } else {
-          sub.textContent = 'Esperando turno';
-        }
-        main.appendChild(nameEl);
-        main.appendChild(sub);
-
-        const right = document.createElement('div');
-        const btnVote = document.createElement('button');
-        btnVote.textContent = 'Votar';
-        btnVote.disabled = !(phase === 'votacion') || localHasVoted;
-        btnVote.addEventListener('click', () => {
-          if (phase !== 'votacion' || localHasVoted) return;
-          p.votes++;
-          localHasVoted = true;
-          localVotesDone++;
-          renderPlayers();
-          log('VOTO', 'Votaste a ' + p.name + '.');
-          if (localVotesDone >= players.length) {
-            endVoting('Todos votaron');
-          }
-        });
-        right.appendChild(btnVote);
-
-        item.appendChild(main);
-        item.appendChild(right);
-        playersListEl.appendChild(item);
-      });
-    }
-
-    function formatTime(sec) {
+    function formatSeconds(sec) {
       const m = Math.floor(sec / 60);
       const s = sec % 60;
       return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
     }
 
-    function setPhase(newPhase) {
-      phase = newPhase;
-      if (phase === 'palabras') {
+    function updatePhaseUI() {
+      if (phase === 'lobby') {
+        phasePill.classList.remove('vote');
+        phasePill.textContent = 'Fase: Lobby';
+        mesaLabelText.textContent = roomCode ? 'Sala ' + roomCode + ' lista.' : 'Esperando sala...';
+        btnSkipVote.disabled = true;
+      } else if (phase === 'palabras') {
         phasePill.classList.remove('vote');
         phasePill.textContent = 'Fase: Palabras';
+        mesaLabelText.textContent = 'Turno de palabra en curso.';
+        btnSkipVote.disabled = true;
       } else if (phase === 'votacion') {
         phasePill.classList.add('vote');
         phasePill.textContent = 'Fase: Votación';
-      } else {
-        phasePill.classList.remove('vote');
-        phasePill.textContent = 'Fase: Esperando';
+        mesaLabelText.textContent = 'Votación abierta.';
+        btnSkipVote.disabled = false;
       }
-      renderPlayers();
+
+      btnStartRound.disabled = !(isHost && phase === 'lobby');
+    }
+
+    function updateConfigChip() {
+      if (!roomCode) {
+        configChip.textContent = 'Sin sala configurada.';
+        return;
+      }
+      const impCount = (window.currentRoomImpostors || 1);
+      configChip.textContent = `${players.length} jugadores · ${impCount} impostores · Sala ${roomCode}`;
+    }
+
+    function renderPlayers() {
+      playersListEl.innerHTML = '';
+      players.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.className = 'player-item';
+        if (p.id === myId) row.classList.add('me');
+        const left = document.createElement('div');
+        left.style.display = 'flex';
+        left.style.flexDirection = 'column';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'name';
+        nameSpan.textContent = p.name;
+        const subSpan = document.createElement('span');
+        subSpan.className = 'sub';
+
+        if (idx === turnIndex && phase === 'palabras') {
+          subSpan.textContent = 'Hablando';
+        } else if (phase === 'votacion') {
+          subSpan.textContent = 'Votación';
+        } else {
+          subSpan.textContent = 'En espera';
+        }
+        left.appendChild(nameSpan);
+        left.appendChild(subSpan);
+
+        const right = document.createElement('div');
+        const voteBtn = document.createElement('button');
+        voteBtn.textContent = 'Votar';
+        voteBtn.style.fontSize = '.7rem';
+        voteBtn.disabled = !(phase === 'votacion' && !localHasVoted);
+        voteBtn.addEventListener('click', () => {
+          if (phase !== 'votacion' || localHasVoted) return;
+          submitVote(p.id);
+        });
+        right.appendChild(voteBtn);
+
+        row.appendChild(left);
+        row.appendChild(right);
+        playersListEl.appendChild(row);
+      });
+    }
+
+    function amICurrentSpeaker() {
+      if (!players.length) return false;
+      const current = players[turnIndex];
+      return current && current.id === myId;
+    }
+
+    function resetTurnTimer() {
+      clearInterval(turnTimerInterval);
+      turnTimerSeconds = 10;
+      turnTimerEl.textContent = formatSeconds(turnTimerSeconds);
     }
 
     function startTurnTimer() {
-      clearInterval(turnInterval);
-      turnSeconds = 10;
-      turnTimerEl.textContent = formatTime(turnSeconds);
-      setPhase('palabras');
-      renderPlayers();
-      turnInterval = setInterval(() => {
-        turnSeconds--;
-        turnTimerEl.textContent = formatTime(turnSeconds);
-        if (turnSeconds <= 0) {
-          clearInterval(turnInterval);
-          endTurn('Tiempo agotado');
+      resetTurnTimer();
+      turnTimerInterval = setInterval(() => {
+        turnTimerSeconds--;
+        if (turnTimerSeconds < 0) turnTimerSeconds = 0;
+        turnTimerEl.textContent = formatSeconds(turnTimerSeconds);
+        if (turnTimerSeconds <= 0) {
+          clearInterval(turnTimerInterval);
+          if (amICurrentSpeaker()) {
+            endMyTurn('Tiempo agotado');
+          }
         }
       }, 1000);
     }
 
-    function endTurn(reason) {
-      const p = players[currentTurn];
-      if (p) {
-        p.hasSpoken = true;
-        log('RONDA', p.name + ' terminó su turno. (' + reason + ')');
-      }
-      const remaining = players.findIndex(pl => !pl.hasSpoken);
-      if (remaining === -1) {
-        startVoting();
-      } else {
-        currentTurn = remaining;
-        startTurnTimer();
-        log('RONDA', 'Turno de ' + players[currentTurn].name + '.');
-      }
-      renderPlayers();
+    function resetVoteTimer() {
+      clearInterval(voteTimerInterval);
+      voteTimerSeconds = 180;
+      voteTimerEl.textContent = formatSeconds(voteTimerSeconds);
     }
 
-    function startVoting() {
-      clearInterval(turnInterval);
-      setPhase('votacion');
-      btnSkipVote.disabled = false;
-      btnStart.disabled = true;
-      voteSeconds = 180;
-      voteTimerEl.textContent = formatTime(voteSeconds);
-      localVotesDone = 0;
-      localHasVoted = false;
-      renderPlayers();
-      log('VOTO', 'Comienza la votación (3 minutos).');
-      voteInterval = setInterval(() => {
-        voteSeconds--;
-        voteTimerEl.textContent = formatTime(voteSeconds);
-        if (voteSeconds <= 0) {
-          clearInterval(voteInterval);
-          endVoting('Tiempo agotado');
+    function startVoteTimer() {
+      resetVoteTimer();
+      voteTimerInterval = setInterval(() => {
+        voteTimerSeconds--;
+        if (voteTimerSeconds < 0) voteTimerSeconds = 0;
+        voteTimerEl.textContent = formatSeconds(voteTimerSeconds);
+        if (voteTimerSeconds <= 0) {
+          clearInterval(voteTimerInterval);
         }
       }, 1000);
     }
 
-    function endVoting(reason) {
-      clearInterval(voteInterval);
-      btnSkipVote.disabled = true;
-      btnStart.disabled = false;
-      setPhase('esperando');
-      voteTimerEl.textContent = '03:00';
-
-      let kicked = null;
-      let maxVotes = 0;
-      players.forEach(p => {
-        if (p.votes > maxVotes) {
-          maxVotes = p.votes;
-          kicked = p;
-        }
-      });
-      if (!kicked || maxVotes === 0) {
-        log('VOTO', 'Nadie fue expulsado. (' + reason + ')');
-      } else {
-        log('VOTO',
-          kicked.name + ' fue expulsado con ' + maxVotes +
-          ' votos. ' + (kicked.impostor ? '¡Era impostor!' : 'Era ciudadano.')
-        );
+    function updateMyCard() {
+      if (!roomCode) {
+        wordDisplay.textContent = '----';
+        roleDisplay.textContent = 'Creá sala o unite para ver tu carta.';
+        return;
       }
-      players.forEach(p => { p.hasSpoken = false; p.votes = 0; });
-      currentTurn = 0;
-      renderPlayers();
+      if (!myRole) {
+        wordDisplay.textContent = '----';
+        roleDisplay.textContent = 'Esperando que empiece la ronda.';
+        return;
+      }
+      if (myRole === 'impostor') {
+        wordDisplay.textContent = 'IMPOSTOR';
+        roleDisplay.textContent = 'No reveles tu rol. Mezclate con el resto.';
+      } else {
+        wordDisplay.textContent = myWord || 'CLAVE';
+        roleDisplay.textContent = 'Decí una palabra relacionada sin decir la palabra exacta.';
+      }
     }
 
-    // ----- Lobby lógica (demo) -----
+    // Lobby tab switching
     tabCreate.addEventListener('click', () => {
       tabCreate.classList.add('active');
       tabJoin.classList.remove('active');
@@ -894,137 +880,215 @@
     tabJoin.addEventListener('click', () => {
       tabJoin.classList.add('active');
       tabCreate.classList.remove('active');
-      panelCreate.style.display = 'none';
       panelJoin.style.display = '';
+      panelCreate.style.display = 'none';
     });
 
-    btnCreate.addEventListener('click', () => {
-      const name = (hostNameInput.value || '').trim() || 'Host';
-      const mp = Math.max(3, Math.min(15, parseInt(maxPlayersInput.value || '10', 10)));
-      let imp = Math.max(1, Math.min(4, parseInt(impostorsInput.value || '3', 10)));
-      if (imp >= mp) imp = Math.max(1, mp-1);
-      maxPlayersInput.value = mp;
-      impostorsInput.value = imp;
+    btnCreateRoom.addEventListener('click', () => {
+      const name = hostNameInput.value.trim() || 'Jugador';
+      const maxPlayers = parseInt(maxPlayersInput.value || '10', 10);
+      const impostors = parseInt(impostorsInput.value || '3', 10);
 
-      roomCode = randomRoomCode();
-      roomCodeEl.textContent = roomCode;
-      maxPlayers = mp;
-      impostors = imp;
-
-      players = [];
-      const hostPlayer = {
-        id: Date.now(),
-        name,
-        impostor: false,
-        hasSpoken: false,
-        votes: 0
-      };
-      players.push(hostPlayer);
-      myId = hostPlayer.id;
-      myPlayerNameEl.textContent = name;
-      subtitle.textContent = mp + ' jugadores máx · ' + imp +
-        ' impostores · Ronda de palabra + votación';
-      chipConfig.textContent = mp + ' jugadores máx · ' + imp +
-        ' impostores · Micrófono obligatorio';
-      lobby.style.display = 'none';
-      assignRoles();
-      updateMyCard();
-      renderPlayers();
-      btnStart.disabled = false;
-      log('SISTEMA', 'Sala ' + roomCode + ' creada. Este dispositivo juega como ' + name + '.');
+      socket.emit('createRoom', { name, maxPlayers, impostors }, (res) => {
+        if (!res || !res.ok) {
+          alert(res && res.error ? res.error : 'Error al crear la sala');
+          return;
+        }
+        roomCode = res.code;
+        myId = res.me.id;
+        myName = res.me.name;
+        isHost = !!res.isHost;
+        headerSubtitle.textContent = 'Sala ' + roomCode + ' creada. Esperando jugadores…';
+        myInfo.textContent = `Vos sos ${myName} · Anfitrión de la sala ${roomCode}`;
+        createCodeHint.textContent = roomCode;
+        joinCodeHint.textContent = roomCode;
+        lobbyOverlay.style.display = 'none';
+        mainContent.classList.remove('blurred');
+        phase = 'lobby';
+        updatePhaseUI();
+        updateMyCard();
+        log('SISTEMA', `Sala ${roomCode} creada. Esperando al menos 3 jugadores para empezar.`);
+      });
     });
 
-    btnJoin.addEventListener('click', () => {
-      const name = (joinNameInput.value || '').trim() || 'Jugador';
-      if (!roomCode) {
-        alert('En esta demo la sala se crea sólo en este dispositivo. Más adelante se conecta online.');
-        return;
-      }
+    btnJoinRoom.addEventListener('click', () => {
+      const name = joinNameInput.value.trim() || 'Jugador';
       const code = (joinCodeInput.value || '').trim().toUpperCase();
-      if (code !== roomCode) {
-        alert('El código no coincide con la sala actual de esta demo.');
+      if (!code) {
+        alert('Escribí el código de sala.');
         return;
       }
-      if (players.length >= maxPlayers) {
-        alert('La sala ya está completa.');
-        return;
-      }
-      const newPlayer = {
-        id: Date.now() + Math.floor(Math.random()*10000),
-        name,
-        impostor: false,
-        hasSpoken: false,
-        votes: 0
-      };
-      players.push(newPlayer);
-      myId = newPlayer.id;
-      myPlayerNameEl.textContent = name;
-      lobby.style.display = 'none';
-      assignRoles();
-      updateMyCard();
-      renderPlayers();
-      log('SISTEMA', 'Nuevo jugador en la mesa: ' + name + '. (demo local)');
+      socket.emit('joinRoom', { name, code }, (res) => {
+        if (!res || !res.ok) {
+          alert(res && res.error ? res.error : 'No se pudo unir a la sala');
+          return;
+        }
+        roomCode = res.code;
+        myId = res.me.id;
+        myName = res.me.name;
+        isHost = !!res.isHost;
+        headerSubtitle.textContent = 'Conectado a la sala ' + roomCode + '. Esperando que inicie la ronda.';
+        myInfo.textContent = `Vos sos ${myName} · Sala ${roomCode}`;
+        createCodeHint.textContent = roomCode;
+        joinCodeHint.textContent = roomCode;
+        lobbyOverlay.style.display = 'none';
+        mainContent.classList.remove('blurred');
+        phase = 'lobby';
+        updatePhaseUI();
+        updateMyCard();
+        log('SISTEMA', `Te uniste a la sala ${roomCode}.`);
+      });
     });
 
-    btnStart.addEventListener('click', () => {
-      if (players.length < 3) {
-        alert('Necesitás al menos 3 jugadores para empezar la ronda.');
-        return;
-      }
-      players.forEach(p => { p.hasSpoken = false; p.votes = 0; });
-      currentTurn = 0;
-      setPhase('palabras');
-      startTurnTimer();
-      log('RONDA', 'Empieza la ronda. Arranca ' + players[0].name + '.');
+    btnStartRound.addEventListener('click', () => {
+      if (!isHost) return;
+      socket.emit('startRound', (res) => {
+        if (!res || !res.ok) {
+          alert(res && res.error ? res.error : 'No se pudo iniciar la ronda');
+        }
+      });
     });
 
-    btnSkipVote.addEventListener('click', () => {
-      if (phase !== 'votacion') return;
-      localVotesDone++;
-      log('VOTO', 'Marcaste "Nadie / Saltar voto".');
-      if (localVotesDone >= players.length) {
-        endVoting('Todos votaron / Nadie');
-      }
-    });
-
-    // ---- Voz / Micrófono (solo en turno propio) ----
-    let micOn = false;
-    let audioContext = null;
-    let analyser = null;
-    let micStream = null;
-    let levelAnimationId = null;
-
-    function stopMic(endTurnToo) {
-      if (micStream) {
-        micStream.getTracks().forEach(t => t.stop());
-        micStream = null;
-      }
-      if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-      }
-      if (levelAnimationId) cancelAnimationFrame(levelAnimationId);
-      levelAnimationId = null;
-      voiceLevel.style.width = '0%';
-      voiceDot.classList.remove('active');
-      voiceStatus.textContent = 'Micrófono en silencio';
-      voiceHint.textContent = 'Activá el micrófono sólo cuando sea tu turno.';
-      btnMic.textContent = '🎙️ Decir palabra';
-      micOn = false;
-      if (endTurnToo && phase === 'palabras' && players[currentTurn] && players[currentTurn].id === myId) {
-        clearInterval(turnInterval);
-        endTurn('Cortó el micrófono');
-      }
+    function endMyTurn(reason) {
+      // reason solo para log local
+      socket.emit('endTurn', (res) => {
+        if (!res || !res.ok) {
+          console.warn('No se pudo terminar el turno:', res && res.error);
+        } else {
+          log('RONDA', `Terminó tu turno. (${reason})`);
+        }
+      });
     }
 
-    async function startMic() {
-      if (!players.length || myId == null) {
-        alert('Primero unite a la sala.');
+    function submitVote(targetId) {
+      socket.emit('submitVote', { targetId }, (res) => {
+        if (!res || !res.ok) {
+          console.warn('No se pudo registrar el voto:', res && res.error);
+        } else {
+          localHasVoted = true;
+          renderPlayers();
+          btnSkipVote.disabled = false;
+        }
+      });
+    }
+
+    btnSkipVote.addEventListener('click', () => {
+      if (phase !== 'votacion' || localHasVoted) return;
+      submitVote(null);
+      log('VOTO', 'Elegiste: Nadie (saltar voto).');
+    });
+
+    // Socket listeners
+    socket.on('connect', () => {
+      console.log('Conectado al servidor', socket.id);
+    });
+
+    socket.on('roomState', (state) => {
+      if (!state) return;
+      players = state.players || [];
+      turnIndex = state.turnIndex || 0;
+      phase = state.phase || 'lobby';
+      window.currentRoomImpostors = state.impostors || 1;
+
+      updatePhaseUI();
+      updateConfigChip();
+      renderPlayers();
+    });
+
+    socket.on('yourRole', (data) => {
+      myRole = data.role;
+      myWord = data.word || null;
+      updateMyCard();
+      if (myRole === 'impostor') {
+        log('ROL', 'Te tocó IMPOSTOR.');
+      } else {
+        log('ROL', 'Sos CIUDADANO.');
+      }
+    });
+
+    socket.on('roundStarted', (data) => {
+      phase = 'palabras';
+      updatePhaseUI();
+      localHasVoted = false;
+      resetVoteTimer();
+      resetTurnTimer();
+      startTurnTimer();
+      log('RONDA', 'Comienza una nueva ronda. Arranca el Jugador 1.');
+      renderPlayers();
+    });
+
+    socket.on('turnChanged', (data) => {
+      if (!data) return;
+      turnIndex = data.turnIndex || 0;
+      resetTurnTimer();
+      startTurnTimer();
+      const current = players[turnIndex];
+      if (current) {
+        log('RONDA', 'Turno de ' + current.name + '.');
+      }
+      renderPlayers();
+    });
+
+    socket.on('playerSpoken', (data) => {
+      // solo para log suave
+      if (!data) return;
+      const p = players.find(x => x.id === data.playerId);
+      if (p && p.id !== myId) {
+        log('RONDA', p.name + ' terminó su turno.');
+      }
+    });
+
+    socket.on('votingStarted', () => {
+      phase = 'votacion';
+      localHasVoted = false;
+      updatePhaseUI();
+      startVoteTimer();
+      renderPlayers();
+      log('VOTO', 'Comienza la votación (3 minutos).');
+    });
+
+    socket.on('voteRegistered', (data) => {
+      if (!data) return;
+      if (data.voterId === myId) return; // ya logueamos local
+      const voter = players.find(p => p.id === data.voterId);
+      if (!voter) return;
+      if (data.targetId) {
+        const target = players.find(p => p.id === data.targetId);
+        if (target) {
+          log('VOTO', voter.name + ' votó a ' + target.name + '.');
+        }
+      } else {
+        log('VOTO', voter.name + ' eligió: Nadie.');
+      }
+    });
+
+    socket.on('votingResults', (data) => {
+      phase = 'lobby';
+      resetVoteTimer();
+      resetTurnTimer();
+      updatePhaseUI();
+      localHasVoted = false;
+      if (data && data.kickedPlayer) {
+        log('VOTO', `${data.kickedPlayer.name} fue expulsado. ` +
+          (data.isImpostor ? '¡Era impostor!' : 'Era ciudadano.'));
+      } else {
+        log('VOTO', 'Nadie fue expulsado. (' + (data && data.reason || 'Fin de la votación') + ')');
+      }
+      renderPlayers();
+    });
+
+    // VOICE
+    async function enableMic() {
+      if (!roomCode) {
+        alert('Primero creá una sala o unite a una.');
         return;
       }
-      const currentPlayer = players[currentTurn];
-      if (!currentPlayer || currentPlayer.id !== myId) {
-        alert('No es tu turno. Esperá a que te toque.');
+      if (phase !== 'palabras') {
+        alert('El micrófono solo se usa en la fase de palabras.');
+        return;
+      }
+      if (!amICurrentSpeaker()) {
+        alert('No es tu turno.');
         return;
       }
       try {
@@ -1035,42 +1099,73 @@
         analyser.fftSize = 256;
         source.connect(analyser);
 
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.0; // no reproducir por parlantes
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        startVoiceLevel();
         micOn = true;
         voiceDot.classList.add('active');
-        voiceStatus.textContent = 'Hablando…';
-        voiceHint.textContent = 'Cuando termines tu palabra, cortá el micrófono.';
-        btnMic.textContent = '⏹️ Cortar voz';
-
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-
-        function updateLevel() {
-          if (!analyser) return;
-          analyser.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
-          const avg = sum / bufferLength;
-          const pct = Math.min(100,(avg/255)*120);
-          voiceLevel.style.width = pct.toFixed(0) + '%';
-          levelAnimationId = requestAnimationFrame(updateLevel);
-        }
-        updateLevel();
+        voiceStatusText.textContent = 'Hablando… decí tu palabra.';
+        voiceHint.textContent = 'Tu voz no se envía al servidor, solo sirve de guía visual.';
+        btnToggleMic.textContent = '⏹️ Cortar voz';
+        log('VOZ', 'Micrófono activado para tu turno.');
       } catch (err) {
         console.error(err);
-        alert('No se pudo usar el micrófono. Revisá los permisos del navegador.');
+        voiceHint.textContent = 'No se pudo acceder al micrófono. Revisá los permisos del navegador.';
+        log('ERROR', 'Permiso de micrófono denegado.');
       }
     }
 
-    btnMic.addEventListener('click', () => {
+    function disableMic(cutTurn) {
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+      if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+      }
+      if (voiceAnimationId) cancelAnimationFrame(voiceAnimationId);
+      voiceLevelInner.style.width = '0%';
+      voiceDot.classList.remove('active');
+      voiceStatusText.textContent = 'Micrófono en silencio';
+      voiceHint.textContent = 'El micrófono solo sirve para ver el nivel de voz en tu dispositivo.';
+      btnToggleMic.textContent = '🎙️ Decir palabra';
+      micOn = false;
+      if (cutTurn && phase === 'palabras' && amICurrentSpeaker()) {
+        endMyTurn('Cortaste el micrófono');
+      }
+    }
+
+    function startVoiceLevel() {
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      function draw() {
+        if (!analyser) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+        const avg = sum / bufferLength;
+        const pct = Math.min(100, (avg/255)*120);
+        voiceLevelInner.style.width = pct.toFixed(0) + '%';
+        voiceAnimationId = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    btnToggleMic.addEventListener('click', () => {
       if (micOn) {
-        stopMic(true);
+        disableMic(true);
       } else {
-        startMic();
+        enableMic();
       }
     });
 
     window.addEventListener('beforeunload', () => {
-      stopMic(false);
+      disableMic(false);
     });
   </script>
 </body>
