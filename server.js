@@ -100,8 +100,8 @@ function startVoting(room) {
   }, 180000);
 }
 
+
 function finishVoting(room, reason) {
-  resetVoting(room);
   room.phase = 'lobby';
   room.spoken = {};
   room.turnIndex = 0;
@@ -109,7 +109,7 @@ function finishVoting(room, reason) {
   // Contar votos
   const tally = {};
   Object.values(room.votes).forEach(targetId => {
-    if (!targetId) return; // saltar voto
+    if (!targetId) return; // saltar voto "Nadie"
     tally[targetId] = (tally[targetId] || 0) + 1;
   });
 
@@ -133,6 +133,8 @@ function finishVoting(room, reason) {
     isImpostor
   });
 
+  // ahora sí, limpiar votos / timeout para la próxima ronda
+  resetVoting(room);
   emitRoomState(room);
 }
 
