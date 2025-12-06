@@ -221,7 +221,7 @@ function finishVoting(room, reason) {
   resetVoting(room);
   emitRoomState(room);
 }
-ata && data.maxPlayers, 10) || 10;
+let maxPlayers = parseInt(data && data.maxPlayers, 10) || 10;
       let impostors = parseInt(data && data.impostors, 10) || 3;
       if (maxPlayers < 3) maxPlayers = 3;
       if (maxPlayers > 15) maxPlayers = 15;
