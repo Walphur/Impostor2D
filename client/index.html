@@ -593,7 +593,7 @@
           <div class="hud">
             <div class="pill">
               <span class="pill-label">Turno</span>
-              <span class="pill-value" id="turnTimer">00:10</span>
+              <span class="pill-value" id="turnTimer">00:15</span>
             </div>
             <div class="pill">
               <span class="pill-label">Votación</span>
@@ -662,19 +662,25 @@
     let phase = 'lobby';
     let turnIndex = 0;
 
-    let turnTimerSeconds = 10;
+    let turnTimerSeconds = 15;
     let turnTimerInterval = null;
     let voteTimerSeconds = 180;
     let voteTimerInterval = null;
 
     let localHasVoted = false;
 
-    // Voice
+    // Voice + WebRTC
     let audioContext = null;
     let analyser = null;
     let micStream = null;
     let voiceAnimationId = null;
     let micOn = false;
+
+    const ICE_CONFIG = {
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    };
+    const webrtcPeers = new Map();
+    let webrtcReady = false;
 
     const headerSubtitle = document.getElementById('headerSubtitle');
     const myInfo = document.getElementById('myInfo');
@@ -813,7 +819,7 @@
 
     function resetTurnTimer() {
       clearInterval(turnTimerInterval);
-      turnTimerSeconds = 10;
+      turnTimerSeconds = 15;
       turnTimerEl.textContent = formatSeconds(turnTimerSeconds);
     }
 
@@ -1076,23 +1082,34 @@
       }
       renderPlayers();
     });
+    socket.on('webrtc-offer', ({ from, offer }) => {
+      handleOffer(from, offer);
+    });
+
+    socket.on('webrtc-answer', ({ from, answer }) => {
+      handleAnswer(from, answer);
+    });
+
+    socket.on('webrtc-ice-candidate', ({ from, candidate }) => {
+      handleRemoteCandidate(from, candidate);
+    });
+
+    socket.on('webrtc-peers', ({ peerIds }) => {
+      (peerIds || []).forEach(pid => {
+        if (pid && pid !== myId) {
+          callPeer(pid);
+        }
+      });
+    });
+
 
     // VOICE
-    async function enableMic() {
-      if (!roomCode) {
-        alert('Primero creá una sala o unite a una.');
-        return;
-      }
-      if (phase !== 'palabras') {
-        alert('El micrófono solo se usa en la fase de palabras.');
-        return;
-      }
-      if (!amICurrentSpeaker()) {
-        alert('No es tu turno.');
-        return;
-      }
+    
+    async function ensureMicStream() {
+      if (micStream) return micStream;
       try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // configurar analizador para la barra de nivel
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioContext.createMediaStreamSource(micStream);
         analyser = audioContext.createAnalyser();
@@ -1105,33 +1122,130 @@
         gainNode.connect(audioContext.destination);
 
         startVoiceLevel();
-        micOn = true;
-        voiceDot.classList.add('active');
-        voiceStatusText.textContent = 'Hablando… decí tu palabra.';
-        voiceHint.textContent = 'Tu voz no se envía al servidor, solo sirve de guía visual.';
-        btnToggleMic.textContent = '⏹️ Cortar voz';
-        log('VOZ', 'Micrófono activado para tu turno.');
+        window.__arcaneLocalStream = micStream;
+        return micStream;
       } catch (err) {
         console.error(err);
         voiceHint.textContent = 'No se pudo acceder al micrófono. Revisá los permisos del navegador.';
         log('ERROR', 'Permiso de micrófono denegado.');
+        return null;
       }
+    }
+
+    function createPeerConnection(peerId) {
+      const pc = new RTCPeerConnection(ICE_CONFIG);
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit('webrtc-ice-candidate', { to: peerId, candidate: event.candidate });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        let audioEl = document.querySelector(`audio[data-peer-id="${peerId}"]`);
+        if (!audioEl) {
+          audioEl = document.createElement('audio');
+          audioEl.dataset.peerId = String(peerId);
+          audioEl.autoplay = true;
+          document.body.appendChild(audioEl);
+        }
+        audioEl.srcObject = event.streams[0];
+      };
+
+      if (micStream) {
+        for (const track of micStream.getTracks()) {
+          pc.addTrack(track, micStream);
+        }
+      }
+
+      webrtcPeers.set(peerId, pc);
+      return pc;
+    }
+
+    async function callPeer(peerId) {
+      const stream = await ensureMicStream();
+      if (!stream) return;
+      let pc = webrtcPeers.get(peerId);
+      if (!pc) pc = createPeerConnection(peerId);
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('webrtc-offer', { to: peerId, offer });
+    }
+
+    async function handleOffer(fromId, offer) {
+      const stream = await ensureMicStream();
+      if (!stream) return;
+      let pc = webrtcPeers.get(fromId);
+      if (!pc) pc = createPeerConnection(fromId);
+      await pc.setRemoteDescription(offer);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('webrtc-answer', { to: fromId, answer });
+    }
+
+    async function handleAnswer(fromId, answer) {
+      const pc = webrtcPeers.get(fromId);
+      if (!pc) return;
+      await pc.setRemoteDescription(answer);
+    }
+
+    async function handleRemoteCandidate(fromId, candidate) {
+      let pc = webrtcPeers.get(fromId);
+      if (!pc) pc = createPeerConnection(fromId);
+      await pc.addIceCandidate(candidate);
+    }
+
+    async function enableMic() {
+      if (!roomCode) {
+        alert('Primero creá una sala o unite a una.');
+        return;
+      }
+      if (phase === 'lobby') {
+        alert('El micrófono se usa durante la ronda de palabras o en la votación.');
+        return;
+      }
+      if (phase === 'palabras' && !amICurrentSpeaker()) {
+        alert('No es tu turno.');
+        return;
+      }
+
+      const stream = await ensureMicStream();
+      if (!stream) return;
+
+      // activar audio hacia los demás
+      stream.getTracks().forEach(t => t.enabled = true);
+
+      if (!webrtcReady) {
+        webrtcReady = true;
+        socket.emit('webrtc-ready');
+        voiceHint.textContent = 'Conectando voz con los demás jugadores...';
+      } else {
+        voiceHint.textContent = phase === 'votacion'
+          ? 'Micrófono abierto para la votación.'
+          : 'Hablando… decí tu palabra.';
+      }
+
+      micOn = true;
+      voiceDot.classList.add('active');
+      voiceStatusText.textContent = phase === 'votacion'
+        ? 'Micrófono activo (votación).'
+        : 'Hablando… decí tu palabra.';
+      btnToggleMic.textContent = '⏹️ Cortar voz';
+      log('VOZ', phase === 'votacion'
+        ? 'Micrófono activado durante la votación.'
+        : 'Micrófono activado para tu turno.');
     }
 
     function disableMic(cutTurn) {
       if (micStream) {
-        micStream.getTracks().forEach(t => t.stop());
-        micStream = null;
+        micStream.getTracks().forEach(t => t.enabled = false);
       }
-      if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-      }
-      if (voiceAnimationId) cancelAnimationFrame(voiceAnimationId);
+      // No cerramos el AudioContext ni detenemos el stream,
+      // para mantener las conexiones WebRTC activas.
       voiceLevelInner.style.width = '0%';
       voiceDot.classList.remove('active');
       voiceStatusText.textContent = 'Micrófono en silencio';
-      voiceHint.textContent = 'El micrófono solo sirve para ver el nivel de voz en tu dispositivo.';
+      voiceHint.textContent = 'Tocá el botón para hablar.';
       btnToggleMic.textContent = '🎙️ Decir palabra';
       micOn = false;
       if (cutTurn && phase === 'palabras' && amICurrentSpeaker()) {
@@ -1139,7 +1253,7 @@
       }
     }
 
-    function startVoiceLevel() {
+function startVoiceLevel() {
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
 

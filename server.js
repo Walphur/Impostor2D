@@ -348,6 +348,46 @@ io.on('connection', socket => {
     }
   });
 
+
+  // --- WebRTC signalling para voz entre jugadores ---
+  socket.on('webrtc-ready', () => {
+    const room = getRoomOfSocket(socket.id);
+    if (!room) return;
+    if (!room.webrtcReady) room.webrtcReady = new Set();
+    room.webrtcReady.add(socket.id);
+
+    const peers = Array.from(room.webrtcReady).filter(id => id !== socket.id);
+    if (peers.length > 0) {
+      // Avisar a este jugador de los que ya están listos
+      io.to(socket.id).emit('webrtc-peers', { peerIds: peers });
+      // Avisar a los otros que este jugador está listo
+      peers.forEach(pid => {
+        io.to(pid).emit('webrtc-peers', { peerIds: [socket.id] });
+      });
+    }
+  });
+
+  socket.on('webrtc-offer', ({ to, offer }) => {
+    const room = getRoomOfSocket(socket.id);
+    if (!room) return;
+    if (!to || !room.players.find(p => p.id === to)) return;
+    io.to(to).emit('webrtc-offer', { from: socket.id, offer });
+  });
+
+  socket.on('webrtc-answer', ({ to, answer }) => {
+    const room = getRoomOfSocket(socket.id);
+    if (!room) return;
+    if (!to || !room.players.find(p => p.id === to)) return;
+    io.to(to).emit('webrtc-answer', { from: socket.id, answer });
+  });
+
+  socket.on('webrtc-ice-candidate', ({ to, candidate }) => {
+    const room = getRoomOfSocket(socket.id);
+    if (!room) return;
+    if (!to || !room.players.find(p => p.id === to)) return;
+    io.to(to).emit('webrtc-ice-candidate', { from: socket.id, candidate });
+  });
+
   socket.on('disconnect', () => {
     console.log('Socket desconectado', socket.id);
     const code = socketRoom[socket.id];
