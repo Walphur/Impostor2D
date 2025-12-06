@@ -639,295 +639,243 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
+  // Conexión con Socket.IO
+  const socket = io();
 
-    let myId = null;
-    let myName = '';
-    let myRole = null; // 'ciudadano' | 'impostor'
-    let myWord = null;
-    let roomCode = null;
-    let isHost = false;
+  // Estado local del cliente
+  let myId = null;
+  let myName = '';
+  let roomCode = null;
+  let isHost = false;
+  let hostId = null;
+  let players = [];
+  let phase = 'lobby';
+  let turnIndex = 0;
+  let localHasVoted = false;
 
-    let players = [];
-    let phase = 'lobby';
-    let turnIndex = 0;
+  // Referencias a elementos de la UI
+  const headerSubtitle = document.getElementById('headerSubtitle');
+  const myInfo = document.getElementById('myInfo');
+  const mainContent = document.getElementById('mainContent');
+  const lobbyOverlay = document.getElementById('lobbyOverlay');
 
-    let turnTimerSeconds = 15;
-    let turnTimerInterval = null;
-    let voteTimerSeconds = 180;
-    let voteTimerInterval = null;
+  const tabCreate = document.getElementById('tabCreate');
+  const tabJoin = document.getElementById('tabJoin');
+  const panelCreate = document.getElementById('panelCreate');
+  const panelJoin = document.getElementById('panelJoin');
+  const hostNameInput = document.getElementById('hostName');
+  const maxPlayersInput = document.getElementById('maxPlayers');
+  const impostorsInput = document.getElementById('impostors');
+  const btnCreateRoom = document.getElementById('btnCreateRoom');
+  const createCodeHint = document.getElementById('createCodeHint');
+  const joinNameInput = document.getElementById('joinName');
+  const joinCodeInput = document.getElementById('joinCode');
+  const joinCodeHint = document.getElementById('joinCodeHint');
+  const btnJoinRoom = document.getElementById('btnJoinRoom');
 
-    let localHasVoted = false;
+  const mesaLabelText = document.getElementById('mesaLabelText');
+  const wordDisplay = document.getElementById('wordDisplay');
+  const roleDisplay = document.getElementById('roleDisplay');
+  const turnTimerEl = document.getElementById('turnTimer');
+  const voteTimerEl = document.getElementById('voteTimer');
+  const phasePill = document.getElementById('phasePill');
+  const configChip = document.getElementById('configChip');
+  const playersListEl = document.getElementById('playersList');
+  const logEl = document.getElementById('log');
+  const btnStartRound = document.getElementById('btnStartRound');
+  const btnSkipVote = document.getElementById('btnSkipVote');
 
-    // Voice
-    let audioContext = null;
-    let analyser = null;
-    let micStream = null;
-    let voiceAnimationId = null;
-    let micOn = false;
+  const connectionLabelEl = document.getElementById('connectionLabel');
 
-    const headerSubtitle = document.getElementById('headerSubtitle');
-    const myInfo = document.getElementById('myInfo');
-    const mainContent = document.getElementById('mainContent');
-    const lobbyOverlay = document.getElementById('lobbyOverlay');
+  // ---- Utilidades de UI ----
+  function log(tag, text) {
+    if (!logEl) return;
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    const t1 = document.createElement('span');
+    t1.className = 'log-tag';
+    t1.textContent = tag;
+    const t2 = document.createElement('span');
+    t2.textContent = text;
+    line.appendChild(t1);
+    line.appendChild(t2);
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
 
-    const tabCreate = document.getElementById('tabCreate');
-    const tabJoin = document.getElementById('tabJoin');
-    const panelCreate = document.getElementById('panelCreate');
-    const panelJoin = document.getElementById('panelJoin');
-    const hostNameInput = document.getElementById('hostName');
-    const maxPlayersInput = document.getElementById('maxPlayers');
-    const impostorsInput = document.getElementById('impostors');
-    const btnCreateRoom = document.getElementById('btnCreateRoom');
-    const createCodeHint = document.getElementById('createCodeHint');
-    const joinNameInput = document.getElementById('joinName');
-    const joinCodeInput = document.getElementById('joinCode');
-    const joinCodeHint = document.getElementById('joinCodeHint');
-    const btnJoinRoom = document.getElementById('btnJoinRoom');
+  function formatSeconds(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
 
-    const mesaLabelText = document.getElementById('mesaLabelText');
-    const wordDisplay = document.getElementById('wordDisplay');
-    const roleDisplay = document.getElementById('roleDisplay');
-    const turnTimerEl = document.getElementById('turnTimer');
-    const voteTimerEl = document.getElementById('voteTimer');
-    const phasePill = document.getElementById('phasePill');
-    const configChip = document.getElementById('configChip');
-    const playersListEl = document.getElementById('playersList');
-    const logEl = document.getElementById('log');
-    const btnStartRound = document.getElementById('btnStartRound');
-    const btnSkipVote = document.getElementById('btnSkipVote');
-
-    const btnDiscordVoice = document.getElementById('btnDiscordVoice');
-    const voiceStatusText = document.getElementById('voiceStatusText');
-    let discordInviteUrl = null;
-
-    function log(tag, text) {
-      const line = document.createElement('div');
-      line.className = 'log-line';
-      const t1 = document.createElement('span');
-      t1.className = 'log-tag';
-      t1.textContent = tag;
-      const t2 = document.createElement('span');
-      t2.textContent = text;
-      line.appendChild(t1);
-      line.appendChild(t2);
-      logEl.appendChild(line);
-      logEl.scrollTop = logEl.scrollHeight;
+  function setTabs(createActive) {
+    if (!tabCreate || !tabJoin || !panelCreate || !panelJoin) return;
+    if (createActive) {
+      tabCreate.classList.add('active');
+      tabJoin.classList.remove('active');
+      panelCreate.style.display = 'block';
+      panelJoin.style.display = 'none';
+    } else {
+      tabCreate.classList.remove('active');
+      tabJoin.classList.add('active');
+      panelCreate.style.display = 'none';
+      panelJoin.style.display = 'block';
     }
+  }
 
-    function formatSeconds(sec) {
-      const m = Math.floor(sec / 60);
-      const s = sec % 60;
-      return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  function updatePhaseUI() {
+    if (!phasePill) return;
+    if (phase === 'lobby') {
+      phasePill.classList.remove('vote');
+      phasePill.textContent = 'Fase: Lobby';
+    } else if (phase === 'palabras') {
+      phasePill.classList.remove('vote');
+      phasePill.textContent = 'Fase: Palabras';
+    } else if (phase === 'votacion') {
+      phasePill.classList.add('vote');
+      phasePill.textContent = 'Fase: Votación';
     }
+  }
 
-    function updatePhaseUI() {
-      if (phase === 'lobby') {
-        phasePill.classList.remove('vote');
-        phasePill.textContent = 'Fase: Lobby';
-        mesaLabelText.textContent = roomCode ? 'Sala ' + roomCode + ' lista.' : 'Esperando sala...';
-        btnSkipVote.disabled = true;
-      } else if (phase === 'palabras') {
-        phasePill.classList.remove('vote');
-        phasePill.textContent = 'Fase: Palabras';
-        mesaLabelText.textContent = 'Turno de palabra en curso.';
-        btnSkipVote.disabled = true;
+  function updateConfigChip(extra) {
+    if (!configChip) return;
+    const cant = players.length;
+    const base = `${cant} jugador${cant === 1 ? '' : 'es'}`;
+    configChip.textContent = extra ? `${base} · ${extra}` : base;
+  }
+
+  function updateMyCard() {
+    if (!wordDisplay || !roleDisplay) return;
+    if (!roomCode) {
+      wordDisplay.textContent = '----';
+      roleDisplay.textContent = 'Creá sala o unite para ver tu carta.';
+      return;
+    }
+    // El texto concreto se actualiza en socket.on('yourRole')
+  }
+
+  function renderPlayers() {
+    if (!playersListEl) return;
+    playersListEl.innerHTML = '';
+    players.forEach((p, idx) => {
+      const row = document.createElement('div');
+      row.className = 'player-item';
+      if (p.id === myId) row.classList.add('me');
+
+      const left = document.createElement('div');
+      left.style.display = 'flex';
+      left.style.flexDirection = 'column';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = p.name;
+
+      const subSpan = document.createElement('span');
+      subSpan.className = 'sub';
+      if (idx === turnIndex && phase === 'palabras') {
+        subSpan.textContent = 'Hablando';
       } else if (phase === 'votacion') {
-        phasePill.classList.add('vote');
-        phasePill.textContent = 'Fase: Votación';
-        mesaLabelText.textContent = 'Votación abierta.';
-        btnSkipVote.disabled = false;
+        subSpan.textContent = 'Votación';
+      } else {
+        subSpan.textContent = 'En espera';
       }
 
-      btnStartRound.disabled = !(isHost && phase === 'lobby');
-    }
+      left.appendChild(nameSpan);
+      left.appendChild(subSpan);
 
-    function updateConfigChip() {
-      if (!roomCode) {
-        configChip.textContent = 'Sin sala configurada.';
-        return;
-      }
-      const impCount = (window.currentRoomImpostors || 1);
-      configChip.textContent = `${players.length} jugadores · ${impCount} impostores · Sala ${roomCode}`;
-    }
-
-    function renderPlayers() {
-      playersListEl.innerHTML = '';
-      players.forEach((p, idx) => {
-        const row = document.createElement('div');
-        row.className = 'player-item';
-        if (p.id === myId) row.classList.add('me');
-        const left = document.createElement('div');
-        left.style.display = 'flex';
-        left.style.flexDirection = 'column';
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'name';
-        nameSpan.textContent = p.name;
-        const subSpan = document.createElement('span');
-        subSpan.className = 'sub';
-
-        if (idx === turnIndex && phase === 'palabras') {
-          subSpan.textContent = 'Hablando';
-        } else if (phase === 'votacion') {
-          subSpan.textContent = 'Votación';
-        } else {
-          subSpan.textContent = 'En espera';
-        }
-        left.appendChild(nameSpan);
-        left.appendChild(subSpan);
-
-        const right = document.createElement('div');
+      const right = document.createElement('div');
+      if (phase === 'votacion' && p.id !== myId) {
         const voteBtn = document.createElement('button');
         voteBtn.textContent = 'Votar';
-        voteBtn.style.fontSize = '.7rem';
-        voteBtn.disabled = !(phase === 'votacion' && !localHasVoted);
         voteBtn.addEventListener('click', () => {
-          if (phase !== 'votacion' || localHasVoted) return;
           submitVote(p.id);
         });
         right.appendChild(voteBtn);
-
-        row.appendChild(left);
-        row.appendChild(right);
-        playersListEl.appendChild(row);
-      });
-    }
-
-    function amICurrentSpeaker() {
-      if (!players.length) return false;
-      const current = players[turnIndex];
-      return current && current.id === myId;
-    }
-
-    function resetTurnTimer() {
-      clearInterval(turnTimerInterval);
-      turnTimerSeconds = 10;
-      turnTimerEl.textContent = formatSeconds(turnTimerSeconds);
-    }
-
-    function startTurnTimer() {
-      resetTurnTimer();
-      turnTimerInterval = setInterval(() => {
-        turnTimerSeconds--;
-        if (turnTimerSeconds < 0) turnTimerSeconds = 0;
-        turnTimerEl.textContent = formatSeconds(turnTimerSeconds);
-        if (turnTimerSeconds <= 0) {
-          clearInterval(turnTimerInterval);
-          if (amICurrentSpeaker()) {
-            endMyTurn('Tiempo agotado');
-          }
-        }
-      }, 1000);
-    }
-
-    function resetVoteTimer() {
-      clearInterval(voteTimerInterval);
-      voteTimerSeconds = 180;
-      voteTimerEl.textContent = formatSeconds(voteTimerSeconds);
-    }
-
-    function startVoteTimer() {
-      resetVoteTimer();
-      voteTimerInterval = setInterval(() => {
-        voteTimerSeconds--;
-        if (voteTimerSeconds < 0) voteTimerSeconds = 0;
-        voteTimerEl.textContent = formatSeconds(voteTimerSeconds);
-        if (voteTimerSeconds <= 0) {
-          clearInterval(voteTimerInterval);
-        }
-      }, 1000);
-    }
-
-    function updateMyCard() {
-      if (!roomCode) {
-        wordDisplay.textContent = '----';
-        roleDisplay.textContent = 'Creá sala o unite para ver tu carta.';
-        return;
       }
-      if (!myRole) {
-        wordDisplay.textContent = '----';
-        roleDisplay.textContent = 'Esperando que empiece la ronda.';
-        return;
-      }
-      if (myRole === 'impostor') {
-        wordDisplay.textContent = 'IMPOSTOR';
-        roleDisplay.textContent = 'No reveles tu rol. Mezclate con el resto.';
+
+      row.appendChild(left);
+      row.appendChild(right);
+      playersListEl.appendChild(row);
+    });
+  }
+
+  function submitVote(targetId) {
+    if (!socket || localHasVoted) return;
+    socket.emit('submitVote', { targetId }, (res) => {
+      if (!res || !res.ok) {
+        console.warn('No se pudo registrar el voto:', res && res.error);
       } else {
-        wordDisplay.textContent = myWord || 'CLAVE';
-        roleDisplay.textContent = 'Decí una palabra relacionada sin decir la palabra exacta.';
+        localHasVoted = true;
+        log('VOTO', targetId ? 'Voto registrado.' : 'Voto: Nadie.');
       }
-    }
-
-    // Lobby tab switching
-    tabCreate.addEventListener('click', () => {
-      tabCreate.classList.add('active');
-      tabJoin.classList.remove('active');
-      panelCreate.style.display = '';
-      panelJoin.style.display = 'none';
     });
-    tabJoin.addEventListener('click', () => {
-      tabJoin.classList.add('active');
-      tabCreate.classList.remove('active');
-      panelJoin.style.display = '';
-      panelCreate.style.display = 'none';
-    });
+  }
 
+  // ---- Handlers de UI ----
+  if (tabCreate && tabJoin) {
+    tabCreate.addEventListener('click', () => setTabs(true));
+    tabJoin.addEventListener('click', () => setTabs(false));
+  }
+
+  if (btnCreateRoom) {
     btnCreateRoom.addEventListener('click', () => {
-      const name = hostNameInput.value.trim() || 'Jugador';
+      const name = (hostNameInput.value || '').trim() || 'Jugador';
       const maxPlayers = parseInt(maxPlayersInput.value || '10', 10);
       const impostors = parseInt(impostorsInput.value || '3', 10);
-
       socket.emit('createRoom', { name, maxPlayers, impostors }, (res) => {
         if (!res || !res.ok) {
           alert(res && res.error ? res.error : 'Error al crear la sala');
           return;
         }
-        roomCode = res.code;
-        myId = res.me.id;
-        myName = res.me.name;
+        roomCode = res.code || res.roomCode;
+        myId = res.me && res.me.id;
+        myName = res.me && res.me.name;
         isHost = !!res.isHost;
-        headerSubtitle.textContent = 'Sala ' + roomCode + ' creada. Esperando jugadores…';
-        myInfo.textContent = `Vos sos ${myName} · Anfitrión de la sala ${roomCode}`;
-        createCodeHint.textContent = roomCode;
-        joinCodeHint.textContent = roomCode;
-        lobbyOverlay.style.display = 'none';
-        mainContent.classList.remove('blurred');
+        if (headerSubtitle) headerSubtitle.textContent = 'Sala ' + roomCode + ' creada. Esperando jugadores…';
+        if (myInfo) myInfo.textContent = `Vos sos ${myName} · Anfitrión de la sala ${roomCode}`;
+        if (createCodeHint) createCodeHint.textContent = roomCode;
+        if (joinCodeHint) joinCodeHint.textContent = roomCode;
+        if (lobbyOverlay) lobbyOverlay.style.display = 'none';
+        if (mainContent) mainContent.classList.remove('blurred');
         phase = 'lobby';
         updatePhaseUI();
         updateMyCard();
         log('SISTEMA', `Sala ${roomCode} creada. Esperando al menos 3 jugadores para empezar.`);
       });
     });
+  }
 
+  if (btnJoinRoom) {
     btnJoinRoom.addEventListener('click', () => {
-      const name = joinNameInput.value.trim() || 'Jugador';
-      const code = (joinCodeInput.value || '').trim().toUpperCase();
-      if (!code) {
-        alert('Escribí el código de sala.');
+      const name = (joinNameInput.value || '').trim() || 'Jugador';
+      const codeRaw = (joinCodeInput.value || '').trim().toUpperCase();
+      if (!codeRaw) {
+        alert('Poné el código de sala.');
         return;
       }
-      socket.emit('joinRoom', { name, code }, (res) => {
+      socket.emit('joinRoom', { name, roomCode: codeRaw }, (res) => {
         if (!res || !res.ok) {
-          alert(res && res.error ? res.error : 'No se pudo unir a la sala');
+          alert(res && res.error ? res.error : 'Error al unirse a la sala');
           return;
         }
-        roomCode = res.code;
-        myId = res.me.id;
-        myName = res.me.name;
+        roomCode = res.code || res.roomCode || codeRaw;
+        myId = res.me && res.me.id;
+        myName = res.me && res.me.name;
         isHost = !!res.isHost;
-        headerSubtitle.textContent = 'Conectado a la sala ' + roomCode + '. Esperando que inicie la ronda.';
-        myInfo.textContent = `Vos sos ${myName} · Sala ${roomCode}`;
-        createCodeHint.textContent = roomCode;
-        joinCodeHint.textContent = roomCode;
-        lobbyOverlay.style.display = 'none';
-        mainContent.classList.remove('blurred');
+        if (headerSubtitle) headerSubtitle.textContent = 'Sala ' + roomCode;
+        if (myInfo) myInfo.textContent = `Vos sos ${myName} · Jugador en la sala ${roomCode}`;
+        if (lobbyOverlay) lobbyOverlay.style.display = 'none';
+        if (mainContent) mainContent.classList.remove('blurred');
         phase = 'lobby';
         updatePhaseUI();
         updateMyCard();
         log('SISTEMA', `Te uniste a la sala ${roomCode}.`);
       });
     });
+  }
 
+  if (btnStartRound) {
     btnStartRound.addEventListener('click', () => {
       if (!isHost) return;
       socket.emit('startRound', (res) => {
@@ -936,161 +884,113 @@
         }
       });
     });
+  }
 
-    function endMyTurn(reason) {
-      // reason solo para log local
-      socket.emit('endTurn', (res) => {
-        if (!res || !res.ok) {
-          console.warn('No se pudo terminar el turno:', res && res.error);
-        } else {
-          log('RONDA', `Terminó tu turno. (${reason})`);
-        }
-      });
-    }
-
-    function submitVote(targetId) {
-      socket.emit('submitVote', { targetId }, (res) => {
-        if (!res || !res.ok) {
-          console.warn('No se pudo registrar el voto:', res && res.error);
-        } else {
-          localHasVoted = true;
-          renderPlayers();
-          btnSkipVote.disabled = false;
-        }
-      });
-    }
-
+  if (btnSkipVote) {
     btnSkipVote.addEventListener('click', () => {
-      if (phase !== 'votacion' || localHasVoted) return;
       submitVote(null);
-      log('VOTO', 'Elegiste: Nadie (saltar voto).');
     });
+  }
 
-    // Socket listeners
-    socket.on('connect', () => {
-      console.log('Conectado al servidor', socket.id);
-    });
+  // ---- Eventos Socket.IO ----
+  socket.on('roomState', (state) => {
+    if (!state) return;
+    roomCode = state.code || state.roomCode || roomCode;
+    players = state.players || players;
+    hostId = state.hostId || hostId;
+    phase = state.phase || phase;
+    turnIndex = typeof state.turnIndex === 'number' ? state.turnIndex : turnIndex;
+    isHost = !!(myId && hostId === myId);
 
-    socket.on('roomState', (state) => {
-      if (!state) return;
-      players = state.players || [];
-      turnIndex = state.turnIndex || 0;
-      phase = state.phase || 'lobby';
-      window.currentRoomImpostors = state.impostors || 1;
+    updatePhaseUI();
+    updateConfigChip();
+    renderPlayers();
 
-      // Guardar link de Discord si existe
-      if (typeof state.discordInviteUrl === 'string' && state.discordInviteUrl.length > 0) {
-        discordInviteUrl = state.discordInviteUrl;
-        if (btnDiscordVoice) {
-          btnDiscordVoice.disabled = false;
-        }
-        voiceStatusText.textContent = 'Canal de voz listo en Discord';
-      } else {
-        discordInviteUrl = null;
-        if (btnDiscordVoice) {
-          btnDiscordVoice.disabled = true;
-        }
-        voiceStatusText.textContent = 'Canal de voz no disponible';
-      }
-
-      updatePhaseUI();
-      updateConfigChip();
-      renderPlayers();
-    });
- else {
-        log('ROL', 'Sos CIUDADANO.');
-      }
-    });
-
-    socket.on('roundStarted', (data) => {
-      phase = 'palabras';
-      updatePhaseUI();
-      localHasVoted = false;
-      resetVoteTimer();
-      resetTurnTimer();
-      startTurnTimer();
-
-      // Abrir automáticamente el canal de Discord al comenzar la ronda
-      if (discordInviteUrl) {
-        window.open(discordInviteUrl, '_blank');
-      }
-
-      log('RONDA', 'Comienza una nueva ronda. Arranca el Jugador 1.');
-     renderPlayers();
-    });
-
-    socket.on('turnChanged', (data) => {
-      if (!data) return;
-      turnIndex = data.turnIndex || 0;
-      resetTurnTimer();
-      startTurnTimer();
-      const current = players[turnIndex];
-      if (current) {
-        log('RONDA', 'Turno de ' + current.name + '.');
-      }
-      renderPlayers();
-    });
-
-    socket.on('playerSpoken', (data) => {
-      // solo para log suave
-      if (!data) return;
-      const p = players.find(x => x.id === data.playerId);
-      if (p && p.id !== myId) {
-        log('RONDA', p.name + ' terminó su turno.');
-      }
-    });
-
-    socket.on('votingStarted', () => {
-      phase = 'votacion';
-      localHasVoted = false;
-      updatePhaseUI();
-      startVoteTimer();
-      renderPlayers();
-      log('VOTO', 'Comienza la votación (3 minutos).');
-    });
-
-    socket.on('voteRegistered', (data) => {
-      if (!data) return;
-      if (data.voterId === myId) return; // ya logueamos local
-      const voter = players.find(p => p.id === data.voterId);
-      if (!voter) return;
-      if (data.targetId) {
-        const target = players.find(p => p.id === data.targetId);
-        if (target) {
-          log('VOTO', voter.name + ' votó a ' + target.name + '.');
-        }
-      } else {
-        log('VOTO', voter.name + ' eligió: Nadie.');
-      }
-    });
-
-    socket.on('votingResults', (data) => {
-      phase = 'lobby';
-      resetVoteTimer();
-      resetTurnTimer();
-      updatePhaseUI();
-      localHasVoted = false;
-      if (data && data.kickedPlayer) {
-        log('VOTO', `${data.kickedPlayer.name} fue expulsado. ` +
-          (data.isImpostor ? '¡Era impostor!' : 'Era ciudadano.'));
-      } else {
-        log('VOTO', 'Nadie fue expulsado. (' + (data && data.reason || 'Fin de la votación') + ')');
-      }
-      renderPlayers();
-    });
-
-        // DISCORD VOICE LINK
-    if (btnDiscordVoice) {
-      btnDiscordVoice.addEventListener('click', () => {
-        if (discordInviteUrl) {
-          window.open(discordInviteUrl, '_blank');
-        }
-      });
+    if (connectionLabelEl && roomCode) {
+      connectionLabelEl.textContent = `Servidor: conectado · Sala ${roomCode}`;
     }
+  });
 
-    window.addEventListener('beforeunload', () => {
-      // Nada especial que limpiar del lado del cliente.
-    });
-  </script>
+  socket.on('yourRole', (data) => {
+    if (!data) return;
+    const role = data.role;
+    const word = data.word || null;
+    if (wordDisplay) {
+      wordDisplay.textContent = word || '???';
+    }
+    if (roleDisplay) {
+      if (role === 'impostor') {
+        roleDisplay.textContent = 'IMPOSTOR';
+        log('ROL', 'Sos IMPOS
+TOR. Fingí que conocés la palabra.');
+      } else {
+        roleDisplay.textContent = 'CIUDADANO';
+        log('ROL', 'Sos CIUDADANO. Conocés la palabra.');
+      }
+    }
+    updateMyCard();
+  });
+
+  socket.on('roundStarted', (data) => {
+    phase = 'palabras';
+    localHasVoted = false;
+    updatePhaseUI();
+    if (turnTimerEl) turnTimerEl.textContent = formatSeconds(30);
+    if (voteTimerEl) voteTimerEl.textContent = formatSeconds(180);
+    log('RONDA', 'Comienza una nueva ronda.');
+    renderPlayers();
+  });
+
+  socket.on('turnChanged', (data) => {
+    if (!data) return;
+    turnIndex = data.turnIndex || 0;
+    renderPlayers();
+  });
+
+  socket.on('playerSpoken', (data) => {
+    if (!data) return;
+    log('RONDA', 'Un jugador terminó su turno.');
+  });
+
+  socket.on('votingStarted', () => {
+    phase = 'votacion';
+    localHasVoted = false;
+    updatePhaseUI();
+    if (voteTimerEl) voteTimerEl.textContent = formatSeconds(180);
+    log('VOTO', 'Empieza la fase de votación.');
+    renderPlayers();
+  });
+
+  socket.on('voteRegistered', (data) => {
+    // ya se refleja por localHasVoted, no hace falta mucho más
+  });
+
+  socket.on('votingResults', (data) => {
+    phase = 'lobby';
+    localHasVoted = false;
+    updatePhaseUI();
+    if (data && data.kickedPlayer) {
+      log('VOTO', `${data.kickedPlayer.name} fue expulsado. ` +
+        (data.isImpostor ? '¡Era impostor!' : 'Era ciudadano.'));
+    } else {
+      log('VOTO', 'Nadie fue expulsado.');
+    }
+    renderPlayers();
+  });
+
+  socket.on('connect', () => {
+    log('SISTEMA', 'Conectado al servidor.');
+  });
+  socket.on('disconnect', () => {
+    log('SISTEMA', 'Desconectado del servidor.');
+    if (connectionLabelEl) connectionLabelEl.textContent = 'Servidor: desconectado';
+  });
+
+  // Estado inicial de pestañas
+  setTabs(true);
+  updatePhaseUI();
+  updateMyCard();
+</script>
+
 </body>
 </html>
