@@ -221,7 +221,13 @@ function finishVoting(room, reason) {
   resetVoting(room);
   emitRoomState(room);
 }
-let maxPlayers = parseInt(data && data.maxPlayers, 10) || 10;
+io.on('connection', (socket) => {
+  console.log('Nuevo cliente conectado', socket.id);
+
+  socket.on('createRoom', (data, cb) => {
+    try {
+      const name = (data && data.name || '').trim() || 'Jugador';
+      let maxPlayers = parseInt(data && data.maxPlayers, 10) || 10;
       let impostors = parseInt(data && data.impostors, 10) || 3;
       if (maxPlayers < 3) maxPlayers = 3;
       if (maxPlayers > 15) maxPlayers = 15;
@@ -270,6 +276,7 @@ let maxPlayers = parseInt(data && data.maxPlayers, 10) || 10;
       cb && cb({ ok: false, error: 'Error interno del servidor.' });
     }
   });
+
 
   socket.on('joinRoom', (data, cb) => {
     try {
