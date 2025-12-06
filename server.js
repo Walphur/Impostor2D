@@ -3,14 +3,20 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
-const { Client, GatewayIntentBits, ChannelType } = require('discord.js');
+let Client, GatewayIntentBits, ChannelType;
+try {
+  ({ Client, GatewayIntentBits, ChannelType } = require('discord.js'));
+} catch (e) {
+  console.log('discord.js no encontrado, se desactiva integración con Discord.');
+}
+
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
 const DISCORD_CATEGORY_ID = process.env.DISCORD_CATEGORY_ID || null;
 
 let discordClient = null;
-if (DISCORD_TOKEN && DISCORD_GUILD_ID) {
+if (Client && DISCORD_TOKEN && DISCORD_GUILD_ID) {
   discordClient = new Client({ intents: [GatewayIntentBits.Guilds] });
   discordClient.login(DISCORD_TOKEN)
     .then(() => console.log('Discord bot conectado.'))
@@ -142,6 +148,7 @@ function getRoomOfSocket(socketId) {
 }
 
 function emitRoomState(room) {
+    roomCode: room.code,
   const payload = {
     code: room.code,
     hostId: room.hostId,
@@ -221,22 +228,7 @@ function finishVoting(room, reason) {
   resetVoting(room);
   emitRoomState(room);
 }
-
-io.on('connection', (socket) => {
-  console.log('Nuevo cliente conectado', socket.id);
-
-  socket.on('createRoom', (data, cb) => {
-    try {
-      const name = (data && data.name || '').trim() || 'Jugador';
-      let maxPlayers = parseInt(data && data.maxPlayers, 10) || 10;
-      let impostors = parseInt(data && data.impostors, 10) || 3;
-      if (maxPlayers < 3) maxPlayers = 3;
-      if (maxPlayers > 15) maxPlayers = 15;
-      if (impostors < 1) impostors = 1;
-      if (impostors > 4) impostors = 4;
-      if (impostors >= maxPlayers) impostors = Math.max(1, maxPlayers - 1);
-
-      const code = generateCode();
+const code = generateCode();
       const room = {
         code,
         hostId: socket.id,
@@ -244,9 +236,6 @@ io.on('connection', (socket) => {
         impostors,
         players: [{ id: socket.id, name }],
         phase: 'lobby',
-        currentPlayerId: null,
-        currentWord: null,
-        usedWords: [],
         turnIndex: 0,
         roles: {},
         word: null,
@@ -274,222 +263,221 @@ io.on('connection', (socket) => {
           .catch(err => console.error('Error al crear canal de voz para sala', code, err));
       }
 
-      cb && cb({ ok: true, code, me: { id: socket.id, name }, isHost: true });
+      cb && cb({ ok: true, code, roomCode: code, me: { id: socket.id, name }, isHost: true });
     } catch (err) {
       console.error('Error createRoom', err);
       cb && cb({ ok: false, error: 'Error interno del servidor.' });
     }
   });
 
-    socket.on('joinRoom', (data, cb) => {
-      try {
-        const codeRaw = data && data.code || '';
-        const code = codeRaw.trim().toUpperCase();
-        const name = (data && data.name || '').trim() || 'Jugador';
+  socket.on('joinRoom', (data, cb) => {
+    try {
+      const codeRaw = (data && (data.code || data.roomCode)) || '';
+      const code = codeRaw.trim().toUpperCase();
+      const name = (data && data.name || '').trim() || 'Jugador';
 
-        const room = rooms[code];
-        if (!room) {
-          cb && cb({ ok: false, error: 'Sala no encontrada.' });
-          return;
-        }
-        if (room.players.length >= room.maxPlayers) {
-          cb && cb({ ok: false, error: 'La sala está llena.' });
-          return;
-        }
-
-        socket.join(code);
-        socketRoom[socket.id] = code;
-        room.players.push({ id: socket.id, name });
-        room.spoken[socket.id] = false;
-
-        console.log(`Socket ${socket.id} se unió a sala ${code}`);
-        emitRoomState(room);
-
-        cb && cb({ ok: true, code, me: { id: socket.id, name }, isHost: room.hostId === socket.id });
-      } catch (err) {
-        console.error('Error joinRoom', err);
-        cb && cb({ ok: false, error: 'Error interno del servidor.' });
-      }
-    });
-
-    socket.on('startRound', (cb) => {
-      try {
-        const room = getRoomOfSocket(socket.id);
-        if (!room) {
-          cb && cb({ ok: false, error: 'No estás en ninguna sala.' });
-          return;
-        }
-        if (room.hostId !== socket.id) {
-          cb && cb({ ok: false, error: 'Solo el anfitrión puede iniciar la ronda.' });
-          return;
-        }
-        if (room.players.length < 3) {
-          cb && cb({ ok: false, error: 'Necesitás al menos 3 jugadores.' });
-          return;
-        }
-
-        // Asignar roles
-        room.roles = {};
-        const shuffled = [...room.players];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        const impostorPlayers = shuffled.slice(0, room.impostors);
-        const impostorIds = new Set(impostorPlayers.map(p => p.id));
-
-        room.players.forEach(p => {
-          const role = impostorIds.has(p.id) ? 'impostor' : 'ciudadano';
-          room.roles[p.id] = role;
-        });
-
-        room.word = randomWord();
-        room.phase = 'palabras';
-        room.turnIndex = 0;
-        room.spoken = {};
-        room.players.forEach(p => {
-          room.spoken[p.id] = false;
-        });
-        resetVoting(room);
-
-        // Enviar rol individual a cada jugador
-        room.players.forEach(p => {
-          const role = room.roles[p.id];
-          const payload = {
-            role,
-            word: role === 'ciudadano' ? room.word : null
-          };
-          io.to(p.id).emit('yourRole', payload);
-        });
-
-        io.to(room.code).emit('roundStarted', {
-          wordLength: room.word.length,
-          turnIndex: room.turnIndex
-        });
-        emitRoomState(room);
-
-        cb && cb({ ok: true });
-      } catch (err) {
-        console.error('Error startRound', err);
-        cb && cb({ ok: false, error: 'Error interno del servidor.' });
-      }
-    });
-
-    socket.on('endTurn', (cb) => {
-      try {
-        const room = getRoomOfSocket(socket.id);
-        if (!room) {
-          cb && cb({ ok: false, error: 'No estás en ninguna sala.' });
-          return;
-        }
-        if (room.phase !== 'palabras') {
-          cb && cb({ ok: false, error: 'No estamos en fase de palabras.' });
-          return;
-        }
-        const current = room.players[room.turnIndex];
-        if (!current || current.id !== socket.id) {
-          cb && cb({ ok: false, error: 'No es tu turno.' });
-          return;
-        }
-
-        room.spoken[socket.id] = true;
-        io.to(room.code).emit('playerSpoken', { playerId: socket.id });
-
-        if (allSpoken(room)) {
-          startVoting(room);
-        } else {
-          // Buscar siguiente jugador que no haya hablado
-          let nextIndex = room.turnIndex;
-          for (let i = 0; i < room.players.length; i++) {
-            nextIndex = (nextIndex + 1) % room.players.length;
-            const p = room.players[nextIndex];
-            if (!room.spoken[p.id]) {
-              room.turnIndex = nextIndex;
-              break;
-            }
-          }
-          io.to(room.code).emit('turnChanged', { turnIndex: room.turnIndex });
-          emitRoomState(room);
-        }
-
-        cb && cb({ ok: true });
-      } catch (err) {
-        console.error('Error endTurn', err);
-        cb && cb({ ok: false, error: 'Error interno del servidor.' });
-      }
-    });
-
-    socket.on('submitVote', (data, cb) => {
-      try {
-        const room = getRoomOfSocket(socket.id);
-        if (!room) {
-          cb && cb({ ok: false, error: 'No estás en ninguna sala.' });
-          return;
-        }
-        if (room.phase !== 'votacion') {
-          cb && cb({ ok: false, error: 'No estamos en fase de votación.' });
-          return;
-        }
-        const targetId = data ? data.targetId || null : null;
-        room.votes[socket.id] = targetId;
-
-        io.to(room.code).emit('voteRegistered', {
-          voterId: socket.id,
-          targetId
-        });
-
-        // Si todos votaron, cerrar votación antes del timeout
-        if (Object.keys(room.votes).length >= room.players.length) {
-          finishVoting(room, 'Todos votaron');
-        }
-
-        cb && cb({ ok: true });
-      } catch (err) {
-        console.error('Error submitVote', err);
-        cb && cb({ ok: false, error: 'Error interno del servidor.' });
-      }
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Socket desconectado', socket.id);
-      const code = socketRoom[socket.id];
-      if (!code) return;
       const room = rooms[code];
       if (!room) {
-        delete socketRoom[socket.id];
+        cb && cb({ ok: false, error: 'Sala no encontrada.' });
+        return;
+      }
+      if (room.players.length >= room.maxPlayers) {
+        cb && cb({ ok: false, error: 'La sala está llena.' });
         return;
       }
 
-      // quitar jugador
-      room.players = room.players.filter(p => p.id !== socket.id);
-      delete room.spoken[socket.id];
-      delete room.roles[socket.id];
-      delete room.votes[socket.id];
-      delete socketRoom[socket.id];
+      socket.join(code);
+      socketRoom[socket.id] = code;
+      room.players.push({ id: socket.id, name });
+      room.spoken[socket.id] = false;
 
-      if (room.players.length === 0) {
-        if (room.voteTimeout) clearTimeout(room.voteTimeout);
-        // Eliminar también recursos de Discord asociados a la sala
-        deleteDiscordResources(room);
-        delete rooms[code];
-        console.log('Sala', code, 'eliminada (sin jugadores)');
-        return;
-      }
-
-      // Si se fue el host, asignar nuevo host
-      if (room.hostId === socket.id) {
-        room.hostId = room.players[0].id;
-      }
-
-      // Ajustar turnIndex si hace falta
-      if (room.turnIndex >= room.players.length) {
-        room.turnIndex = 0;
-      }
-
+      console.log(`Socket ${socket.id} se unió a sala ${code}`);
       emitRoomState(room);
-    });
-});
 
+      cb && cb({ ok: true, code, me: { id: socket.id, name }, isHost: room.hostId === socket.id });
+    } catch (err) {
+      console.error('Error joinRoom', err);
+      cb && cb({ ok: false, error: 'Error interno del servidor.' });
+    }
+  });
+
+  socket.on('startRound', (cb) => {
+    try {
+      const room = getRoomOfSocket(socket.id);
+      if (!room) {
+        cb && cb({ ok: false, error: 'No estás en ninguna sala.' });
+        return;
+      }
+      if (room.hostId !== socket.id) {
+        cb && cb({ ok: false, error: 'Solo el anfitrión puede iniciar la ronda.' });
+        return;
+      }
+      if (room.players.length < 3) {
+        cb && cb({ ok: false, error: 'Necesitás al menos 3 jugadores.' });
+        return;
+      }
+
+      // Asignar roles
+      room.roles = {};
+      const shuffled = [...room.players];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const impostorPlayers = shuffled.slice(0, room.impostors);
+      const impostorIds = new Set(impostorPlayers.map(p => p.id));
+
+      room.players.forEach(p => {
+        const role = impostorIds.has(p.id) ? 'impostor' : 'ciudadano';
+        room.roles[p.id] = role;
+      });
+
+      room.word = randomWord();
+      room.phase = 'palabras';
+      room.turnIndex = 0;
+      room.spoken = {};
+      room.players.forEach(p => {
+        room.spoken[p.id] = false;
+      });
+      resetVoting(room);
+
+      // Enviar rol individual a cada jugador
+      room.players.forEach(p => {
+        const role = room.roles[p.id];
+        const payload = {
+          role,
+          word: role === 'ciudadano' ? room.word : null
+        };
+        io.to(p.id).emit('yourRole', payload);
+      });
+
+      io.to(room.code).emit('roundStarted', {
+        wordLength: room.word.length,
+        turnIndex: room.turnIndex
+      });
+      emitRoomState(room);
+
+      cb && cb({ ok: true });
+    } catch (err) {
+      console.error('Error startRound', err);
+      cb && cb({ ok: false, error: 'Error interno del servidor.' });
+    }
+  });
+
+  socket.on('endTurn', (cb) => {
+    try {
+      const room = getRoomOfSocket(socket.id);
+      if (!room) {
+        cb && cb({ ok: false, error: 'No estás en ninguna sala.' });
+        return;
+      }
+      if (room.phase !== 'palabras') {
+        cb && cb({ ok: false, error: 'No estamos en fase de palabras.' });
+        return;
+      }
+      const current = room.players[room.turnIndex];
+      if (!current || current.id !== socket.id) {
+        cb && cb({ ok: false, error: 'No es tu turno.' });
+        return;
+      }
+
+      room.spoken[socket.id] = true;
+      io.to(room.code).emit('playerSpoken', { playerId: socket.id });
+
+      if (allSpoken(room)) {
+        startVoting(room);
+      } else {
+        // Buscar siguiente jugador que no haya hablado
+        let nextIndex = room.turnIndex;
+        for (let i = 0; i < room.players.length; i++) {
+          nextIndex = (nextIndex + 1) % room.players.length;
+          const p = room.players[nextIndex];
+          if (!room.spoken[p.id]) {
+            room.turnIndex = nextIndex;
+            break;
+          }
+        }
+        io.to(room.code).emit('turnChanged', { turnIndex: room.turnIndex });
+        emitRoomState(room);
+      }
+
+      cb && cb({ ok: true });
+    } catch (err) {
+      console.error('Error endTurn', err);
+      cb && cb({ ok: false, error: 'Error interno del servidor.' });
+    }
+  });
+
+  socket.on('submitVote', (data, cb) => {
+    try {
+      const room = getRoomOfSocket(socket.id);
+      if (!room) {
+        cb && cb({ ok: false, error: 'No estás en ninguna sala.' });
+        return;
+      }
+      if (room.phase !== 'votacion') {
+        cb && cb({ ok: false, error: 'No estamos en fase de votación.' });
+        return;
+      }
+      const targetId = data ? data.targetId || null : null;
+      room.votes[socket.id] = targetId;
+
+      io.to(room.code).emit('voteRegistered', {
+        voterId: socket.id,
+        targetId
+      });
+
+      // Si todos votaron, cerrar votación antes del timeout
+      if (Object.keys(room.votes).length >= room.players.length) {
+        finishVoting(room, 'Todos votaron');
+      }
+
+      cb && cb({ ok: true });
+    } catch (err) {
+      console.error('Error submitVote', err);
+      cb && cb({ ok: false, error: 'Error interno del servidor.' });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket desconectado', socket.id);
+    const code = socketRoom[socket.id];
+    if (!code) return;
+    const room = rooms[code];
+    if (!room) {
+      delete socketRoom[socket.id];
+      return;
+    }
+
+    // quitar jugador
+    room.players = room.players.filter(p => p.id !== socket.id);
+    delete room.spoken[socket.id];
+    delete room.roles[socket.id];
+    delete room.votes[socket.id];
+    delete socketRoom[socket.id];
+
+    if (room.players.length === 0) {
+      if (room.voteTimeout) clearTimeout(room.voteTimeout);
+      // Eliminar también recursos de Discord asociados a la sala
+      deleteDiscordResources(room);
+      delete rooms[code];
+      console.log('Sala', code, 'eliminada (sin jugadores)');
+      return;
+    }
+
+    // Si se fue el host, asignar nuevo host
+    if (room.hostId === socket.id) {
+      room.hostId = room.players[0].id;
+    }
+
+    // Ajustar turnIndex si hace falta
+    if (room.turnIndex >= room.players.length) {
+      room.turnIndex = 0;
+    }
+
+    emitRoomState(room);
+  });
+});
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(CLIENT_DIR, 'index.html'));
