@@ -148,8 +148,8 @@ function getRoomOfSocket(socketId) {
 }
 
 function emitRoomState(room) {
-    roomCode: room.code,
   const payload = {
+    roomCode: room.code,
     code: room.code,
     hostId: room.hostId,
     maxPlayers: room.maxPlayers,
@@ -160,6 +160,7 @@ function emitRoomState(room) {
     discordInviteUrl: room.discordInviteUrl || null
   };
   io.to(room.code).emit('roomState', payload);
+}
 }
 
 function resetVoting(room) {
