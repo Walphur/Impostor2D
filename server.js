@@ -3,101 +3,16 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 
-let Client, GatewayIntentBits, ChannelType;
-try {
-  ({ Client, GatewayIntentBits, ChannelType } = require('discord.js'));
-} catch (e) {
-  console.log('discord.js no encontrado, se desactiva integración con Discord.');
-}
-
-
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
-const DISCORD_CATEGORY_ID = process.env.DISCORD_CATEGORY_ID || null;
-
-let discordClient = null;
-if (Client && DISCORD_TOKEN && DISCORD_GUILD_ID) {
-  discordClient = new Client({ intents: [GatewayIntentBits.Guilds] });
-  discordClient.login(DISCORD_TOKEN)
-    .then(() => console.log('Discord bot conectado.'))
-    .catch(err => console.error('Error al conectar Discord bot:', err));
-} else {
-  console.log('Discord bot desactivado: falta DISCORD_TOKEN o DISCORD_GUILD_ID.');
-}
-
-async function createDiscordVoiceChannel(roomCode) {
-  if (!discordClient) return { channelId: null, inviteUrl: null };
-  try {
-    const guild = await discordClient.guilds.fetch(DISCORD_GUILD_ID);
-    const channel = await guild.channels.create({
-      name: `Sala ${roomCode}`,
-      type: ChannelType.GuildVoice,
-      parent: DISCORD_CATEGORY_ID || undefined,
-      reason: 'Sala creada desde Impostor Arcane',
-    });
-    const invite = await channel.createInvite({
-      maxAge: 0,
-      maxUses: 0,
-      reason: 'Invitación de voz para sala de Impostor Arcane',
-    });
-    return { channelId: channel.id, inviteUrl: invite.url };
-  } catch (err) {
-    console.error('Error creando canal de voz en Discord:', err);
-    return { channelId: null, inviteUrl: null };
-  }
-}
-
-async function deleteDiscordResources(room) {
-  if (!discordClient || !room || !room.discordChannelId) return;
-  try {
-    const guild = await discordClient.guilds.fetch(DISCORD_GUILD_ID);
-    const channel = await guild.channels.fetch(room.discordChannelId).catch(() => null);
-    if (channel) {
-      await channel.delete('Sala cerrada desde Impostor Arcane');
-    }
-  } catch (err) {
-    console.error('Error al eliminar recursos de Discord:', err);
-  }
-}
-
-// Intenta mutear en Discord al jugador expulsado, si se encuentra un miembro con ese nombre.
-async function muteDiscordMember(room, playerName) {
-  if (!discordClient || !DISCORD_GUILD_ID || !playerName) return;
-  try {
-    const guild = await discordClient.guilds.fetch(DISCORD_GUILD_ID);
-    const members = await guild.members.fetch();
-    const member = members.find(m =>
-      m.displayName === playerName ||
-      (m.user && (m.user.username === playerName || m.user.globalName === playerName))
-    );
-    if (!member) {
-      console.log('No se encontró miembro de Discord para mutear con nombre', playerName);
-      return;
-    }
-    if (!member.voice || !member.voice.channel) {
-      console.log('Miembro', playerName, 'no está en un canal de voz, no se puede mutear.');
-      return;
-    }
-    await member.voice.setMute(true, 'Expulsado de la ronda en Impostor Arcane');
-    console.log('Miembro de Discord muteado:', playerName);
-  } catch (err) {
-    console.error('Error al mutear miembro de Discord:', err);
-  }
-}
-
-
-
+// Servidor HTTP + Socket.IO
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' },
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
 const CLIENT_DIR = path.join(__dirname, 'client');
 app.use(express.static(CLIENT_DIR));
 
 /**
- * room structure:
+ * Estructura de sala:
  * {
  *   code: string,
  *   hostId: string,
@@ -114,14 +29,14 @@ app.use(express.static(CLIENT_DIR));
  * }
  */
 
-const rooms = {}; // code -> room
+const rooms = {};      // code -> room
 const socketRoom = {}; // socketId -> code
 
 const WORDS = [
   'GALAXIA','MISTERIO','AVENTURA','DESIERTO','OCÉANO','LABERINTO','TRAVESÍA',
   'MONTAÑA','ISLA','INVESTIGACIÓN','SECRETO','FESTIVAL','HOSPITAL','CIUDAD',
   'MUSEO','TORMENTA','PLANETA','CASTILLO','RECUERDO','NOCHE','VERANO',
-  'MISIÓN','EXPEDICIÓN','MERKADO','BIBLIOTECA','CARNAVAL','CIENCIA','TESORO'
+  'MISIÓN','EXPEDICIÓN','MERCADO','BIBLIOTECA','CARNAVAL','CIENCIA','TESORO'
 ];
 
 function randomWord() {
@@ -161,7 +76,6 @@ function emitRoomState(room) {
   };
   io.to(room.code).emit('roomState', payload);
 }
-}
 
 function resetVoting(room) {
   if (room.voteTimeout) {
@@ -195,7 +109,7 @@ function finishVoting(room, reason) {
   // Contar votos
   const tally = {};
   Object.values(room.votes).forEach(targetId => {
-    if (!targetId) return; // saltar voto
+    if (!targetId) return; // saltar voto nulo
     tally[targetId] = (tally[targetId] || 0) + 1;
   });
 
@@ -219,17 +133,34 @@ function finishVoting(room, reason) {
     isImpostor
   });
 
-  // Intentar mutear al jugador expulsado en Discord (si existe)
+  // Si echaron a alguien, eliminarlo de la sala
   if (kickedPlayer) {
-    muteDiscordMember(room, kickedPlayer.name).catch(err =>
-      console.error('Error al mutear expulsado en Discord:', err)
-    );
+    room.players = room.players.filter(p => p.id !== kickedPlayer.id);
+    delete room.spoken[kickedPlayer.id];
+    delete room.roles[kickedPlayer.id];
+    delete room.votes[kickedPlayer.id];
   }
 
   resetVoting(room);
   emitRoomState(room);
 }
-const code = generateCode();
+
+io.on('connection', (socket) => {
+  console.log('Nuevo cliente conectado', socket.id);
+
+  socket.on('createRoom', (data, cb) => {
+    try {
+      const name = (data && data.name || '').trim() || 'Jugador';
+      let maxPlayers = parseInt(data && data.maxPlayers, 10) || 10;
+      let impostors = parseInt(data && data.impostors, 10) || 3;
+
+      if (maxPlayers < 3) maxPlayers = 3;
+      if (maxPlayers > 15) maxPlayers = 15;
+      if (impostors < 1) impostors = 1;
+      if (impostors > 4) impostors = 4;
+      if (impostors >= maxPlayers) impostors = Math.max(1, maxPlayers - 1);
+
+      const code = generateCode();
       const room = {
         code,
         hostId: socket.id,
@@ -246,6 +177,8 @@ const code = generateCode();
         discordChannelId: null,
         discordInviteUrl: null
       };
+      room.spoken[socket.id] = false;
+
       rooms[code] = room;
       socketRoom[socket.id] = code;
       socket.join(code);
@@ -253,18 +186,13 @@ const code = generateCode();
       console.log(`Sala ${code} creada por ${socket.id}`);
       emitRoomState(room);
 
-      // Crear canal de voz en Discord (si está habilitado)
-      if (discordClient) {
-        createDiscordVoiceChannel(code)
-          .then(({ channelId, inviteUrl }) => {
-            room.discordChannelId = channelId;
-            room.discordInviteUrl = inviteUrl;
-            emitRoomState(room);
-          })
-          .catch(err => console.error('Error al crear canal de voz para sala', code, err));
-      }
-
-      cb && cb({ ok: true, code, roomCode: code, me: { id: socket.id, name }, isHost: true });
+      cb && cb({
+        ok: true,
+        code,
+        roomCode: code,
+        me: { id: socket.id, name },
+        isHost: true
+      });
     } catch (err) {
       console.error('Error createRoom', err);
       cb && cb({ ok: false, error: 'Error interno del servidor.' });
@@ -273,7 +201,7 @@ const code = generateCode();
 
   socket.on('joinRoom', (data, cb) => {
     try {
-      const codeRaw = (data && (data.code || data.roomCode)) || '';
+      const codeRaw = data && (data.code || data.roomCode) || '';
       const code = codeRaw.trim().toUpperCase();
       const name = (data && data.name || '').trim() || 'Jugador';
 
@@ -295,7 +223,13 @@ const code = generateCode();
       console.log(`Socket ${socket.id} se unió a sala ${code}`);
       emitRoomState(room);
 
-      cb && cb({ ok: true, code, me: { id: socket.id, name }, isHost: room.hostId === socket.id });
+      cb && cb({
+        ok: true,
+        code,
+        roomCode: code,
+        me: { id: socket.id, name },
+        isHost: room.hostId === socket.id
+      });
     } catch (err) {
       console.error('Error joinRoom', err);
       cb && cb({ ok: false, error: 'Error interno del servidor.' });
@@ -445,8 +379,8 @@ const code = generateCode();
     const code = socketRoom[socket.id];
     if (!code) return;
     const room = rooms[code];
+    delete socketRoom[socket.id];
     if (!room) {
-      delete socketRoom[socket.id];
       return;
     }
 
@@ -455,12 +389,9 @@ const code = generateCode();
     delete room.spoken[socket.id];
     delete room.roles[socket.id];
     delete room.votes[socket.id];
-    delete socketRoom[socket.id];
 
     if (room.players.length === 0) {
       if (room.voteTimeout) clearTimeout(room.voteTimeout);
-      // Eliminar también recursos de Discord asociados a la sala
-      deleteDiscordResources(room);
       delete rooms[code];
       console.log('Sala', code, 'eliminada (sin jugadores)');
       return;
@@ -471,8 +402,9 @@ const code = generateCode();
       room.hostId = room.players[0].id;
     }
 
-    // Ajustar turnIndex si hace falta
-    if (room.turnIndex >= room.players.length) {
+    // Si el jugador desconectado era el del turno actual, pasar al siguiente
+    const current = room.players[room.turnIndex];
+    if (!current) {
       room.turnIndex = 0;
     }
 

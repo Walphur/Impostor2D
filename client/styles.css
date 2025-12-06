@@ -284,3 +284,19 @@ select {
     grid-template-rows: 220px 180px;
   }
 }
+
+/* UI polish añadido */
+.card, .lobby-panel, .online-main, .screen--home {
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+}
+
+button,
+.button {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+}
+
+button:hover,
+.button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+}
