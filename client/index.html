@@ -610,27 +610,13 @@
           <div class="voice-panel">
             <div class="voice-row">
               <div class="voice-status">
-                <div class="voice-dot" id="voiceDot"></div>
-                <span id="voiceStatusText">Micrófono en silencio</span>
+                <span id="voiceStatusText">Canal de voz: Discord</span>
               </div>
-              <button id="btnToggleMic">🎙️ Decir palabra</button>
+              <button id="btnDiscordVoice" class="secondary" disabled>🔊 Abrir canal de Discord</button>
             </div>
-            <div class="voice-row">
-              <div class="voice-level">
-                <div class="voice-level-inner" id="voiceLevelInner"></div>
-              </div>
-              <span style="font-size:.7rem; color:var(--muted);" id="voiceHint">
-                El micrófono solo sirve para ver el nivel de voz en tu dispositivo, no se transmite a los demás.
-              </span>
-            </div>
-            <div class="voice-tip">
-              Cada jugador tiene 15&nbsp;s para decir <strong>una palabra</strong>. Cuando todos hablaron,
-              se abre automáticamente la votación por <strong>3 minutos</strong>. Podés elegir
-              <em>Nadie</em> para saltar voto.
-            </div>
-            <div class="voice-discord" id="discordVoiceRow" style="display:none; font-size:.75rem; color:var(--muted); margin-top:.25rem;">
-              Canal de voz de la sala:&nbsp;
-              <a id="discordVoiceLink" href="#" target="_blank" rel="noopener noreferrer">Abrir en Discord</a>
+            <div class="voice-tip" id="discordVoiceTip">
+              Cuando comience la ronda, se abrirá automáticamente el canal de voz en Discord.
+              También podés usar el botón para entrar de nuevo si lo cerraste.
             </div>
           </div>
         </div>
@@ -670,8 +656,6 @@
     let turnTimerInterval = null;
     let voteTimerSeconds = 180;
     let voteTimerInterval = null;
-
-    let discordInviteUrl = null;
 
     let localHasVoted = false;
 
@@ -713,13 +697,9 @@
     const btnStartRound = document.getElementById('btnStartRound');
     const btnSkipVote = document.getElementById('btnSkipVote');
 
-    const btnToggleMic = document.getElementById('btnToggleMic');
-    const voiceDot = document.getElementById('voiceDot');
+    const btnDiscordVoice = document.getElementById('btnDiscordVoice');
     const voiceStatusText = document.getElementById('voiceStatusText');
-    const voiceHint = document.getElementById('voiceHint');
-    const voiceLevelInner = document.getElementById('voiceLevelInner');
-    const discordVoiceRow = document.getElementById('discordVoiceRow');
-    const discordVoiceLink = document.getElementById('discordVoiceLink');
+    let discordInviteUrl = null;
 
     function log(tag, text) {
       const line = document.createElement('div');
@@ -997,28 +977,27 @@
       turnIndex = state.turnIndex || 0;
       phase = state.phase || 'lobby';
       window.currentRoomImpostors = state.impostors || 1;
-      discordInviteUrl = state.discordInviteUrl || null;
 
-      if (discordInviteUrl) {
-        discordVoiceRow.style.display = 'block';
-        discordVoiceLink.href = discordInviteUrl;
+      // Guardar link de Discord si existe
+      if (typeof state.discordInviteUrl === 'string' && state.discordInviteUrl.length > 0) {
+        discordInviteUrl = state.discordInviteUrl;
+        if (btnDiscordVoice) {
+          btnDiscordVoice.disabled = false;
+        }
+        voiceStatusText.textContent = 'Canal de voz listo en Discord';
       } else {
-        discordVoiceRow.style.display = 'none';
-        discordVoiceLink.removeAttribute('href');
+        discordInviteUrl = null;
+        if (btnDiscordVoice) {
+          btnDiscordVoice.disabled = true;
+        }
+        voiceStatusText.textContent = 'Canal de voz no disponible';
       }
 
       updatePhaseUI();
       updateConfigChip();
       renderPlayers();
     });
-
-    socket.on('yourRole', (data) => {
-      myRole = data.role;
-      myWord = data.word || null;
-      updateMyCard();
-      if (myRole === 'impostor') {
-        log('ROL', 'Te tocó IMPOSTOR.');
-      } else {
+ else {
         log('ROL', 'Sos CIUDADANO.');
       }
     });
@@ -1030,8 +1009,14 @@
       resetVoteTimer();
       resetTurnTimer();
       startTurnTimer();
+
+      // Abrir automáticamente el canal de Discord al comenzar la ronda
+      if (discordInviteUrl) {
+        window.open(discordInviteUrl, '_blank');
+      }
+
       log('RONDA', 'Comienza una nueva ronda. Arranca el Jugador 1.');
-      renderPlayers();
+     renderPlayers();
     });
 
     socket.on('turnChanged', (data) => {
@@ -1094,95 +1079,17 @@
       renderPlayers();
     });
 
-    // VOICE
-    async function enableMic() {
-      if (!roomCode) {
-        alert('Primero creá una sala o unite a una.');
-        return;
-      }
-      if (phase !== 'palabras') {
-        alert('El micrófono solo se usa en la fase de palabras.');
-        return;
-      }
-      if (!amICurrentSpeaker()) {
-        alert('No es tu turno.');
-        return;
-      }
-      try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(micStream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = 0.0; // no reproducir por parlantes
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        startVoiceLevel();
-        micOn = true;
-        voiceDot.classList.add('active');
-        voiceStatusText.textContent = 'Hablando… decí tu palabra.';
-        voiceHint.textContent = 'Tu voz no se envía al servidor, solo sirve de guía visual.';
-        btnToggleMic.textContent = '⏹️ Cortar voz';
-        log('VOZ', 'Micrófono activado para tu turno.');
-      } catch (err) {
-        console.error(err);
-        voiceHint.textContent = 'No se pudo acceder al micrófono. Revisá los permisos del navegador.';
-        log('ERROR', 'Permiso de micrófono denegado.');
-      }
+        // DISCORD VOICE LINK
+    if (btnDiscordVoice) {
+      btnDiscordVoice.addEventListener('click', () => {
+        if (discordInviteUrl) {
+          window.open(discordInviteUrl, '_blank');
+        }
+      });
     }
-
-    function disableMic(cutTurn) {
-      if (micStream) {
-        micStream.getTracks().forEach(t => t.stop());
-        micStream = null;
-      }
-      if (audioContext) {
-        audioContext.close();
-        audioContext = null;
-      }
-      if (voiceAnimationId) cancelAnimationFrame(voiceAnimationId);
-      voiceLevelInner.style.width = '0%';
-      voiceDot.classList.remove('active');
-      voiceStatusText.textContent = 'Micrófono en silencio';
-      voiceHint.textContent = 'El micrófono solo sirve para ver el nivel de voz en tu dispositivo.';
-      btnToggleMic.textContent = '🎙️ Decir palabra';
-      micOn = false;
-      if (cutTurn && phase === 'palabras' && amICurrentSpeaker()) {
-        endMyTurn('Cortaste el micrófono');
-      }
-    }
-
-    function startVoiceLevel() {
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
-      function draw() {
-        if (!analyser) return;
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
-        const avg = sum / bufferLength;
-        const pct = Math.min(100, (avg/255)*120);
-        voiceLevelInner.style.width = pct.toFixed(0) + '%';
-        voiceAnimationId = requestAnimationFrame(draw);
-      }
-      draw();
-    }
-
-    btnToggleMic.addEventListener('click', () => {
-      if (micOn) {
-        disableMic(true);
-      } else {
-        enableMic();
-      }
-    });
 
     window.addEventListener('beforeunload', () => {
-      disableMic(false);
+      // Nada especial que limpiar del lado del cliente.
     });
   </script>
 </body>

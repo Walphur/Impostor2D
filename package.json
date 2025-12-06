@@ -7,7 +7,6 @@
   },
   "dependencies": {
     "express": "^4.19.2",
-    "socket.io": "^4.8.0",
-    "discord.js": "^14.15.3"
+    "socket.io": "^4.8.0"
   }
 }

@@ -54,6 +54,31 @@ async function deleteDiscordResources(room) {
   }
 }
 
+// Intenta mutear en Discord al jugador expulsado, si se encuentra un miembro con ese nombre.
+async function muteDiscordMember(room, playerName) {
+  if (!discordClient || !DISCORD_GUILD_ID || !playerName) return;
+  try {
+    const guild = await discordClient.guilds.fetch(DISCORD_GUILD_ID);
+    const members = await guild.members.fetch();
+    const member = members.find(m =>
+      m.displayName === playerName ||
+      (m.user && (m.user.username === playerName || m.user.globalName === playerName))
+    );
+    if (!member) {
+      console.log('No se encontró miembro de Discord para mutear con nombre', playerName);
+      return;
+    }
+    if (!member.voice || !member.voice.channel) {
+      console.log('Miembro', playerName, 'no está en un canal de voz, no se puede mutear.');
+      return;
+    }
+    await member.voice.setMute(true, 'Expulsado de la ronda en Impostor Arcane');
+    console.log('Miembro de Discord muteado:', playerName);
+  } catch (err) {
+    console.error('Error al mutear miembro de Discord:', err);
+  }
+}
+
 
 
 const app = express();
@@ -154,7 +179,6 @@ function startVoting(room) {
   }, 180000);
 }
 
-
 function finishVoting(room, reason) {
   room.phase = 'lobby';
   room.spoken = {};
@@ -163,7 +187,7 @@ function finishVoting(room, reason) {
   // Contar votos
   const tally = {};
   Object.values(room.votes).forEach(targetId => {
-    if (!targetId) return; // saltar voto / Nadie
+    if (!targetId) return; // saltar voto
     tally[targetId] = (tally[targetId] || 0) + 1;
   });
 
@@ -187,19 +211,17 @@ function finishVoting(room, reason) {
     isImpostor
   });
 
-  // limpiar votos y timeout para la próxima ronda
+  // Intentar mutear al jugador expulsado en Discord (si existe)
+  if (kickedPlayer) {
+    muteDiscordMember(room, kickedPlayer.name).catch(err =>
+      console.error('Error al mutear expulsado en Discord:', err)
+    );
+  }
+
   resetVoting(room);
   emitRoomState(room);
 }
-
-io.on('connection', socket => {
-  console.log('Nuevo cliente conectado', socket.id);
-
-  
-  socket.on('createRoom', async (data, cb) => {
-    try {
-      const name = (data && data.name || '').trim() || 'Jugador';
-      let maxPlayers = parseInt(data && data.maxPlayers, 10) || 10;
+ata && data.maxPlayers, 10) || 10;
       let impostors = parseInt(data && data.impostors, 10) || 3;
       if (maxPlayers < 3) maxPlayers = 3;
       if (maxPlayers > 15) maxPlayers = 15;
@@ -224,19 +246,23 @@ io.on('connection', socket => {
         discordChannelId: null,
         discordInviteUrl: null
       };
-
-      const discordInfo = await createDiscordVoiceChannel(code);
-      if (discordInfo) {
-        room.discordChannelId = discordInfo.channelId || null;
-        room.discordInviteUrl = discordInfo.inviteUrl || null;
-      }
-
       rooms[code] = room;
       socketRoom[socket.id] = code;
       socket.join(code);
 
       console.log(`Sala ${code} creada por ${socket.id}`);
       emitRoomState(room);
+
+      // Crear canal de voz en Discord (si está habilitado)
+      if (discordClient) {
+        createDiscordVoiceChannel(code)
+          .then(({ channelId, inviteUrl }) => {
+            room.discordChannelId = channelId;
+            room.discordInviteUrl = inviteUrl;
+            emitRoomState(room);
+          })
+          .catch(err => console.error('Error al crear canal de voz para sala', code, err));
+      }
 
       cb && cb({ ok: true, code, me: { id: socket.id, name }, isHost: true });
     } catch (err) {
@@ -245,8 +271,7 @@ io.on('connection', socket => {
     }
   });
 
-
-socket.on('joinRoom', (data, cb) => {
+  socket.on('joinRoom', (data, cb) => {
     try {
       const codeRaw = data && data.code || '';
       const code = codeRaw.trim().toUpperCase();
@@ -434,6 +459,7 @@ socket.on('joinRoom', (data, cb) => {
 
     if (room.players.length === 0) {
       if (room.voteTimeout) clearTimeout(room.voteTimeout);
+      // Eliminar también recursos de Discord asociados a la sala
       deleteDiscordResources(room);
       delete rooms[code];
       console.log('Sala', code, 'eliminada (sin jugadores)');
